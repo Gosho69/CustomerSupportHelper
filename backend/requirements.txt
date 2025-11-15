@@ -24,3 +24,5 @@ scikit-learn>=1.7.0
 
 huggingface-hub>=0.36.0
 safetensors>=0.6.0
+
+openai>=0.27.0
