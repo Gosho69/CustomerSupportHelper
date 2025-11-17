@@ -243,7 +243,7 @@ class EmotionAnalyzer:
         return turns
 
 
-def analyze_call(transcript):
+def emotion_analyze_call(transcript):
     """
     Analyze emotions for a call transcript from WhisperX.
     
