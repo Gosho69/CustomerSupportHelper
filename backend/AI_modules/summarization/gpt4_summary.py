@@ -80,19 +80,6 @@ def _convert_to_transcript(data):
     return "\n".join(lines)
 
 def analyze_call(transcript, model=DEFAULT_MODEL, temperature=DEFAULT_TEMPERATURE, max_tokens=DEFAULT_MAX_TOKENS):
-    """
-    Analyze a customer service call using GPT-4.
-    
-    Args:
-        transcript: Can be string, dict with 'utterances', list of utterances, or JSON string
-        model: OpenAI model to use (default: gpt-4o-mini)
-        temperature: Sampling temperature (default: 0.3)
-        max_tokens: Maximum response tokens (default: 800)
-    
-    Returns:
-        Dict with keys: summary, ratings (with helpfulness, respect, clarity, adherence, overall)
-        Returns dict with error key if analysis fails
-    """
     transcript_text = _convert_to_transcript(transcript)
     
     if not transcript_text:

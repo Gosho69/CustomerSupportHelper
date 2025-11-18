@@ -155,20 +155,6 @@ def _improve_summary(summary, transcript):
     return summary
 
 def analyze_call(transcript, checkpoint_path="../model/final"):
-    """
-    Analyze a customer service call and provide summary, tones, and ratings.
-    
-    Args:
-        transcript: Can be one of:
-                   - String in "Role: text" format
-                   - Dict with 'utterances' key (whisperer JSON output)
-                   - List of utterance dicts
-                   - JSON string (will be parsed automatically)
-        checkpoint_path: Path to fine-tuned model checkpoint
-    
-    Returns:
-        Dict with keys: summary, rating, customer_tone, agent_tone, detailed_ratings
-    """
     if transcript is None:
         return {
             "summary": "No conversation provided",

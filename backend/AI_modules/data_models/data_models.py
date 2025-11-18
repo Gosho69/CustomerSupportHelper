@@ -1,14 +1,8 @@
-"""
-Shared data structures for all analyzers.
-All analyzers take Turn objects as input and return enriched Turn objects.
-"""
-
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional
 
 @dataclass
 class Turn:
-    """Single conversation turn (enriched by analyzers)"""
     turn_id: int
     speaker: str 
     start_sec: float
@@ -30,5 +24,4 @@ class Turn:
     sentiment_score: Optional[float] = None
     
     def to_dict(self) -> Dict:
-        """Convert to JSON-serializable dict"""
         return asdict(self)

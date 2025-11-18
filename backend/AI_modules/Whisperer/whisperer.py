@@ -10,10 +10,6 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 
 def _detect_audio_properties(audio_path: str):
-    """
-    Detect if audio is stereo/mono and estimate number of speakers.
-    Returns: (is_stereo, estimated_num_speakers)
-    """
     try:
         data, sr = sf.read(audio_path)
         is_stereo = data.ndim > 1 and data.shape[1] >= 2
@@ -28,10 +24,6 @@ def _detect_audio_properties(audio_path: str):
 
 
 def _convert_pyannote_to_whisperx(pyannote_annotation):
-    """
-    Convert pyannote.Annotation object to whisperx-compatible format.
-    Returns a dict with 'segments' containing speaker information.
-    """
     segments = []
     for segment, track, speaker in pyannote_annotation.itertracks(yield_label=True):
         segments.append({
@@ -43,11 +35,6 @@ def _convert_pyannote_to_whisperx(pyannote_annotation):
     return {'segments': segments}
 
 def _assign_speakers_to_words(diarize_segments, aligned):
-    """
-    Assign speakers to words based on timestamp overlap with maximum overlap rule.
-    Simple, robust approach: assign word to speaker segment with greatest overlap.
-    Continuity enforcement happens later in post-processing.
-    """
     speaker_timeline = diarize_segments.get('segments', [])
     
     if not speaker_timeline:
@@ -198,16 +185,6 @@ def transcribe_mono_with_diarization(
             utterances.append(current)
 
     def _enforce_speaker_continuity(utterances_list, max_short_utterance_duration=0.8, max_words=2):
-        """
-        Merge very short utterances (by duration or small word count) into the previous or next utterance
-        when they appear to be spurious flips at speaker boundaries.
-
-        Rules:
-        - If an utterance has duration <= max_short_utterance_duration OR word count <= max_words,
-          try to merge it into the preceding utterance if the preceding utterance exists and its speaker
-          is different. Otherwise, merge into next utterance.
-        - This preserves natural speaker turns while removing single-word misassignments.
-        """
         if not utterances_list:
             return utterances_list
 
@@ -286,11 +263,6 @@ def transcribe_mono_with_diarization(
 
 
 def _create_synthetic_diarization(aligned):
-    """
-    Fallback diarization: segment transcript based on silence gaps.
-    Heuristic: First speaker is typically the Agent (greeting handler).
-    Alternates between SPEAKER_00 (Agent) and SPEAKER_01 (Customer) when silence > threshold.
-    """
     MIN_SILENCE_GAP = 0.5  
     
     segments = aligned.get("segments", [])
@@ -339,19 +311,6 @@ def transcribe_audio(
     compute_type: str = "int8",
     agent_hint: str | None = None
 ):
-    """
-    Main function to transcribe audio with speaker diarization.
-    
-    Args:
-        audio_path: Path to audio file
-        model_size: Whisper model size (tiny, base, small, medium, large-v2)
-        device: Device to use (cpu or cuda)
-        compute_type: Compute type (int8, float16, float32)
-        agent_hint: Optional speaker ID to assign as agent
-    
-    Returns:
-        Dict with call_id, duration_sec, and utterances
-    """
     if device == "mps":
         device = "cpu"
     
