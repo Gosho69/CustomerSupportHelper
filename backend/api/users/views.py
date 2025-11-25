@@ -115,7 +115,8 @@ class CreateAgentView(APIView):
                 first_name=serializer.validated_data.get('first_name', ''),
                 last_name=serializer.validated_data.get('last_name', ''),
                 role='agent',
-                reporting_to=request.user
+                reporting_to=request.user,
+                company=request.user.company
             )
             
             return Response({
@@ -171,9 +172,8 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'admin':
-            # For admin, return empty queryset for now
-            # TODO: In the future, this will return users based on company access
-            return MyUser.objects.none()
+            # Admin can access all users across all companies
+            return MyUser.objects.all()
         elif user.role == 'head_of_department':
             # Head of department can only manage their subordinates
             return MyUser.objects.filter(reporting_to=user)

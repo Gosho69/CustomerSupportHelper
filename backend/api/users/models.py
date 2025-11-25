@@ -41,6 +41,7 @@ class MyUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, blank=True)
     reporting_to = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='subordinates', limit_choices_to={'role__in': ['head_of_department']})
+    company = models.ForeignKey('company.Company', null=True, blank=True, on_delete=models.SET_NULL, related_name='employees')
     created_at = models.DateTimeField(auto_now_add=True)
     
     objects = MyUserManager()

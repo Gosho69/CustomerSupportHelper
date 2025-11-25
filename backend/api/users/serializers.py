@@ -5,6 +5,7 @@ from .models import MyUser
 class UserSerializer(serializers.ModelSerializer):
     reporting_to_username = serializers.CharField(source='reporting_to.username', read_only=True)
     reporting_to_email = serializers.EmailField(source='reporting_to.email', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
     subordinates_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -13,7 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name', 
             'role', 'is_active', 'is_staff', 'reporting_to', 
             'reporting_to_username', 'reporting_to_email', 
-            'subordinates_count', 'created_at'
+            'company', 'company_name', 'subordinates_count', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
     
