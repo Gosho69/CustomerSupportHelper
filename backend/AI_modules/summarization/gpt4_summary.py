@@ -28,8 +28,14 @@ Your task is to analyze customer service call transcripts and provide:
    - What was the customer's issue or need?
    - How did the agent help or respond?
    - What was the outcome (resolved, escalated, pending)?
+
+2. **CUSTOMER TONE**: The customer's emotional state during the call.
+   Options: "Positive", "Negative", "Neutral", "Frustrated", "Satisfied", "Angry", "Confused"
+
+3. **AGENT TONE**: The agent's approach and demeanor.
+   Options: "Positive", "Professional", "Apologetic", "Helpful", "Dismissive", "Empathetic"
    
-2. **RATINGS** - Rate the agent's performance on a 1-5 scale:
+4. **RATINGS** - Rate the agent's performance on a 1-5 scale:
    - **helpfulness**: Did the agent solve the customer's problem? (1=no help, 3=partial, 5=fully resolved)
    - **respect**: Was the agent courteous and professional? (1=rude, 3=neutral, 5=very respectful)
    - **clarity**: Was communication clear and easy to understand? (1=confusing, 3=adequate, 5=crystal clear)
@@ -39,7 +45,9 @@ Your task is to analyze customer service call transcripts and provide:
 Output ONLY valid JSON with these exact keys:
 {
   "summary": "string",
-  "ratings": {
+  "customer_tone": "string",
+  "agent_tone": "string",
+  "detailed_ratings": {
     "helpfulness": int,
     "respect": int,
     "clarity": int,
@@ -103,8 +111,12 @@ def analyze_call(transcript, model=DEFAULT_MODEL, temperature=DEFAULT_TEMPERATUR
 
         results = json.loads(response.choices[0].message.content)
         
-        if "ratings" in results and "overall" in results["ratings"]:
-            results["rating"] = results["ratings"]["overall"]        
+        if "detailed_ratings" in results and "overall" in results["detailed_ratings"]:
+            results["rating"] = results["detailed_ratings"]["overall"]
+        elif "ratings" in results and "overall" in results["ratings"]:
+            results["rating"] = results["ratings"]["overall"]
+            results["detailed_ratings"] = results.pop("ratings")
+        
         return results
     
     except json.JSONDecodeError:

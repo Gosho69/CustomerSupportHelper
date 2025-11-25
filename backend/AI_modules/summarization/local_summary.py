@@ -1,4 +1,4 @@
-import json, re, torch
+import json, re, torch, os
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -26,8 +26,13 @@ def _load_model(checkpoint_path="out-flan-sft1/final"):
     global _model, _tokenizer, _device
     
     if _model is None:
-        _tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
-        _model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint_path)
+        if os.path.exists(checkpoint_path):
+            _tokenizer = AutoTokenizer.from_pretrained(checkpoint_path, local_files_only=True)
+            _model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint_path, local_files_only=True)
+        else:
+            _tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+            _model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint_path)
+        
         _device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
         _model.to(_device).eval()
     
