@@ -1,3 +1,4 @@
 /backend/.env
 /backend/venv/
 backend/AI_modules/model/
+media/
