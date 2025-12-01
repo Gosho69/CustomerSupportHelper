@@ -2,3 +2,9 @@
 /backend/venv/
 backend/AI_modules/model/
 media/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+**/__pycache__/
