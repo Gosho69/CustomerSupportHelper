@@ -10,6 +10,7 @@ from behaviour_analyzer.summary import summarize_behavioral_call
 from summarization.local_summary import analyze_call as local_summary_analyze
 from summarization.gpt4_summary import analyze_call as gpt4_summary_analyze
 from coaching_tips.coaching_tips import generate
+from topic_analyzer.topic_analyzer import analyze_topics
 
 
 def analyze_call(
@@ -21,7 +22,8 @@ def analyze_call(
     local_model_path="../model/final",
     gpt4_model="gpt-4o-mini",
     gpt4_temperature=0.3,
-    gpt4_max_tokens=800
+    gpt4_max_tokens=800,
+    custom_keywords=None
 ):
     """
     Complete call analysis pipeline.
@@ -82,6 +84,8 @@ def analyze_call(
         behavioral_result=behavioral_results
     )
     
+    topic_analysis = analyze_topics(transcript, custom_keywords=custom_keywords)
+    
     return {
         "transcript": transcript,
         "emotion_analysis": emotion_results,
@@ -89,7 +93,8 @@ def analyze_call(
         "behavioral_analysis": behavioral_results,
         "behavioral_summary": behavioral_summary,
         "call_summary": call_summary,
-        "coaching_tips": coaching_tips
+        "coaching_tips": coaching_tips,
+        "topic_analysis": topic_analysis
     }
 
 

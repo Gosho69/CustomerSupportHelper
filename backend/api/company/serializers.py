@@ -9,7 +9,7 @@ class CompanySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Company
-        fields = ['id', 'name', 'industry', 'purpose', 'address', 'phone_number', 'created_at', 'head_of_department', 'employees_count']
+        fields = ['id', 'name', 'industry', 'purpose', 'address', 'phone_number', 'custom_keywords', 'created_at', 'head_of_department', 'employees_count']
         read_only_fields = ['id', 'created_at']
     
     def get_head_of_department(self, obj):
@@ -54,3 +54,34 @@ class AssignHeadToCompanySerializer(serializers.Serializer):
             return value
         except MyUser.DoesNotExist:
             raise serializers.ValidationError("User not found")
+
+
+class ManageCompanyKeywordsSerializer(serializers.Serializer):
+    custom_keywords = serializers.JSONField(required=True)
+    
+    def validate_custom_keywords(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("custom_keywords must be a dictionary")
+        
+        for topic_name, topic_data in value.items():
+            if not isinstance(topic_data, dict):
+                raise serializers.ValidationError(f"Topic '{topic_name}' must be a dictionary")
+            
+            if 'keywords' not in topic_data and 'phrases' not in topic_data:
+                raise serializers.ValidationError(f"Topic '{topic_name}' must have at least 'keywords' or 'phrases'")
+            
+            if 'keywords' in topic_data and not isinstance(topic_data['keywords'], list):
+                raise serializers.ValidationError(f"Keywords for topic '{topic_name}' must be a list")
+            
+            if 'phrases' in topic_data and not isinstance(topic_data['phrases'], list):
+                raise serializers.ValidationError(f"Phrases for topic '{topic_name}' must be a list")
+            
+            if 'weight' in topic_data:
+                try:
+                    weight = float(topic_data['weight'])
+                    if weight < 0 or weight > 2:
+                        raise serializers.ValidationError(f"Weight for topic '{topic_name}' must be between 0 and 2")
+                except (ValueError, TypeError):
+                    raise serializers.ValidationError(f"Weight for topic '{topic_name}' must be a number")
+        
+        return value

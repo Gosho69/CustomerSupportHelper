@@ -19,6 +19,7 @@ class Call(models.Model):
     behavioral_summary = models.JSONField(null=True, blank=True, help_text="Summary of behavioral analysis")
     
     coaching_tips = models.JSONField(null=True, blank=True, help_text="AI-generated coaching tips")
+    topic_analysis = models.JSONField(null=True, blank=True, help_text="Topic analysis of the call")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

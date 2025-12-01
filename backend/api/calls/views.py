@@ -44,6 +44,10 @@ class UploadCallView(APIView):
             'AI_modules', 'model', 'final'
         )
         
+        custom_keywords = None
+        if request.user.company and request.user.company.custom_keywords:
+            custom_keywords = request.user.company.custom_keywords
+        
         try:
             analysis_results = analyze_call(
                 audio_path=temp_path,
@@ -51,7 +55,8 @@ class UploadCallView(APIView):
                 whisper_model_size="base",
                 device="cpu",
                 compute_type="int8",
-                local_model_path=local_model_path
+                local_model_path=local_model_path,
+                custom_keywords=custom_keywords
             )
             
             call = Call.objects.create(
@@ -63,7 +68,8 @@ class UploadCallView(APIView):
                 emotional_summary=analysis_results['emotion_summary'],
                 behavioral_analysis=analysis_results['behavioral_analysis'],
                 behavioral_summary=analysis_results['behavioral_summary'],
-                coaching_tips=analysis_results['coaching_tips']
+                coaching_tips=analysis_results['coaching_tips'],
+                topic_analysis=analysis_results['topic_analysis']
             )
             
             if 'segments' in analysis_results['transcript'] and analysis_results['transcript']['segments']:

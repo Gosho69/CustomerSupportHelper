@@ -18,7 +18,6 @@ class CallUploadSerializer(serializers.ModelSerializer):
         }
     
     def validate_audio_file(self, value):
-        # Check if file is provided
         if not value:
             raise serializers.ValidationError("Audio file is required")
         allowed_extensions = ['.wav', '.mp3', '.m4a', '.flac', '.ogg', '.opus']
@@ -53,6 +52,7 @@ class CallSerializer(serializers.ModelSerializer):
             'behavioral_analysis',
             'behavioral_summary',
             'coaching_tips',
+            'topic_analysis',
             'created_at',
             'updated_at'
         ]
@@ -67,6 +67,7 @@ class CallSerializer(serializers.ModelSerializer):
             'behavioral_analysis',
             'behavioral_summary',
             'coaching_tips',
+            'topic_analysis',
             'created_at',
             'updated_at'
         ]

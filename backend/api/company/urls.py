@@ -7,4 +7,5 @@ urlpatterns = [
     path('<int:pk>/', views.CompanyDetailView.as_view(), name='company_detail'),
     path('<int:pk>/assign-head/', views.AssignHeadToCompanyView.as_view(), name='assign_head_to_company'),
     path('<int:pk>/employees/', views.CompanyEmployeesListView.as_view(), name='company_employees'),
+    path('keywords/', views.ManageCompanyKeywordsView.as_view(), name='manage_company_keywords'),
 ]

@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Company
-from .serializers import CompanySerializer, CreateCompanySerializer, AssignHeadToCompanySerializer
+from .serializers import CompanySerializer, CreateCompanySerializer, AssignHeadToCompanySerializer, ManageCompanyKeywordsSerializer
 from users.models import MyUser
 from users.views import IsAdmin
 
@@ -89,4 +89,81 @@ class CompanyEmployeesListView(APIView):
         return Response({
             'company': CompanySerializer(company).data,
             'employees': serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class ManageCompanyKeywordsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get custom keywords for head's company"""
+        if request.user.role != 'head_of_department':
+            return Response(
+                {'error': 'Only heads of department can access this endpoint'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if not request.user.company:
+            return Response(
+                {'error': 'You are not assigned to a company'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response({
+            'company_id': request.user.company.id,
+            'company_name': request.user.company.name,
+            'custom_keywords': request.user.company.custom_keywords or {}
+        }, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        """Add or update custom keywords for head's company"""
+        if request.user.role != 'head_of_department':
+            return Response(
+                {'error': 'Only heads of department can manage keywords'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if not request.user.company:
+            return Response(
+                {'error': 'You are not assigned to a company'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = ManageCompanyKeywordsSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        company = request.user.company
+        company.custom_keywords = serializer.validated_data['custom_keywords']
+        company.save()
+        
+        return Response({
+            'message': 'Custom keywords updated successfully',
+            'company_id': company.id,
+            'company_name': company.name,
+            'custom_keywords': company.custom_keywords
+        }, status=status.HTTP_200_OK)
+    
+    def delete(self, request):
+        """Remove custom keywords from head's company"""
+        if request.user.role != 'head_of_department':
+            return Response(
+                {'error': 'Only heads of department can manage keywords'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if not request.user.company:
+            return Response(
+                {'error': 'You are not assigned to a company'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        company = request.user.company
+        company.custom_keywords = None
+        company.save()
+        
+        return Response({
+            'message': 'Custom keywords removed successfully',
+            'company_id': company.id,
+            'company_name': company.name
         }, status=status.HTTP_200_OK)
