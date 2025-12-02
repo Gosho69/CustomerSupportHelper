@@ -19,8 +19,8 @@ class PerformanceReportSerializer(serializers.ModelSerializer):
             'most_common_topics', 'topic_resolution_rate',
             'performance_consistency_score', 'variance_from_average',
             'ranking_in_team', 'percentile_score',
-            'strengths', 'weaknesses', 'recommendations',
-            'overall_rating', 'summary',
+            'strengths', 'weaknesses', 'recommendations', 'weekly_analysis',
+            'overall_rating', 'summary', 'executive_summary', 'ai_generated',
             'generated_at', 'generated_by', 'generated_by_name'
         ]
         read_only_fields = ['id', 'generated_at', 'agent_name', 'agent_username', 'agent_email', 'generated_by_name']

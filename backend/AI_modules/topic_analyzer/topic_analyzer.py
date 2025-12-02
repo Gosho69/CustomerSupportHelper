@@ -171,9 +171,9 @@ class TopicAnalyzer:
         
         full_transcript = " ".join([t.get('text', '') for t in turns]).lower()
         customer_text = " ".join([t.get('text', '') for t in turns 
-                                  if t.get('speaker', '').lower().startswith('customer')]).lower()
+                                  if t.get('role', t.get('speaker', '')).lower().startswith('customer')]).lower()
         agent_text = " ".join([t.get('text', '') for t in turns 
-                              if t.get('speaker', '').lower().startswith('agent')]).lower()
+                              if t.get('role', t.get('speaker', '')).lower().startswith('agent')]).lower()
         
         topic_scores = defaultdict(float)
         topic_evidence = defaultdict(list)
@@ -266,7 +266,7 @@ class TopicAnalyzer:
         for turn_idx, turn in enumerate(turns):
             text = turn.get('text', '').lower()
             start_time = turn.get('start', turn_idx)
-            speaker = turn.get('speaker', 'Unknown')
+            speaker = turn.get('role', turn.get('speaker', 'Unknown'))
             
             for topic in detected_topics:
                 patterns = self.topic_patterns[topic]

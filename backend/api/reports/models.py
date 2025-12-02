@@ -66,7 +66,9 @@ class PerformanceReport(models.Model):
     
     # Overall Assessment
     overall_rating = models.CharField(max_length=20, choices=RATING_CHOICES, null=True, blank=True)
-    summary = models.TextField(blank=True, help_text="Summary of overall performance")
+    summary = models.TextField(blank=True, help_text="Comprehensive AI-generated or rule-based performance summary")
+    executive_summary = models.TextField(blank=True, help_text="Brief executive summary (2-3 sentences)")
+    ai_generated = models.BooleanField(default=False, help_text="Whether report used AI generation")
     
     # Metadata
     generated_at = models.DateTimeField(auto_now_add=True)

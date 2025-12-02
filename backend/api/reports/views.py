@@ -112,6 +112,8 @@ class GenerateReportView(APIView):
             weekly_analysis=metrics.get('weekly_analysis'),
             overall_rating=metrics['assessment']['overall_rating'],
             summary=metrics['assessment']['summary'],
+            executive_summary=metrics['assessment'].get('executive_summary', metrics['assessment']['summary']),
+            ai_generated=metrics['assessment'].get('ai_generated', False),
             generated_by=request.user
         )
         

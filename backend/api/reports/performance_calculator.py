@@ -5,21 +5,32 @@ from django.utils import timezone
 
 from calls.models import Call
 from users.models import MyUser
+from .ai_report_generator import AIReportGenerator
 
 
 class PerformanceCalculator:
     
-    def __init__(self, agent: MyUser, start_date, end_date, report_type='weekly'):
+    def __init__(self, agent: MyUser, start_date, end_date, report_type='weekly', use_ai=True):
         self.agent = agent
         self.start_date = start_date
         self.end_date = end_date
         self.report_type = report_type
+        self.use_ai = use_ai
         self.calls = Call.objects.filter(
             agent=agent,
             call_date__gte=start_date,
             call_date__lte=end_date
         )
         self.weekly_reports = None
+        self.ai_generator = None
+        
+        if use_ai:
+            try:
+                self.ai_generator = AIReportGenerator()
+            except Exception as e:
+                import logging
+                logging.warning(f"AI generator initialization failed: {str(e)}. Using rule-based generation.")
+                self.use_ai = False
         
         if report_type == 'monthly':
             from .models import PerformanceReport
@@ -41,8 +52,10 @@ class PerformanceCalculator:
             'topic_metrics': self._calculate_topic_metrics(),
             'consistency': self._calculate_consistency(),
             'comparison': self._calculate_team_comparison(),
-            'assessment': self._generate_assessment(),
         }
+        
+        # Generate assessment with full metrics context for AI
+        metrics['assessment'] = self._generate_assessment(all_metrics=metrics)
         
         if self.report_type == 'monthly' and self.weekly_reports and self.weekly_reports.exists():
             metrics = self._enhance_with_weekly_data(metrics)
@@ -195,11 +208,72 @@ class PerformanceCalculator:
             'percentile': round(percentile, 2),
         }
     
-    def _generate_assessment(self) -> Dict:
-        behavioral = self._calculate_behavioral_metrics()
-        emotional = self._calculate_emotional_metrics()
-        consistency = self._calculate_consistency()
+    def _generate_assessment(self, all_metrics: Dict = None) -> Dict:
+        if all_metrics:
+            behavioral = all_metrics.get('behavioral_metrics', self._calculate_behavioral_metrics())
+            emotional = all_metrics.get('emotional_metrics', self._calculate_emotional_metrics())
+            consistency = all_metrics.get('consistency', self._calculate_consistency())
+        else:
+            behavioral = self._calculate_behavioral_metrics()
+            emotional = self._calculate_emotional_metrics()
+            consistency = self._calculate_consistency()
+        avg_behavioral = behavioral['average_score'] or 0
+        if avg_behavioral >= 0.8:
+            rating = "excellent"
+            base_summary = "Outstanding performance - consistently exceeds expectations"
+        elif avg_behavioral >= 0.65:
+            rating = "good"
+            base_summary = "Solid performance - meets expectations with room for growth"
+        elif avg_behavioral >= 0.5:
+            rating = "needs_improvement"
+            base_summary = "Performance below expectations - requires focused development"
+        else:
+            rating = "poor"
+            base_summary = "Significant improvement needed - immediate coaching recommended"
         
+        if self.use_ai and self.ai_generator and all_metrics:
+            try:
+                agent_name = f"{self.agent.first_name} {self.agent.last_name}".strip() or self.agent.username
+                
+                call_evidence = self._extract_call_evidence()
+                weekly_evidence = self._extract_weekly_evidence() if self.report_type == 'monthly' and self.weekly_reports else None
+                
+                metrics_with_rating = all_metrics.copy()
+                metrics_with_rating['assessment'] = {'overall_rating': rating}
+                metrics_with_rating['call_evidence'] = call_evidence
+                if weekly_evidence:
+                    metrics_with_rating['weekly_evidence'] = weekly_evidence
+                strengths = self.ai_generator.generate_detailed_strengths(metrics_with_rating, agent_name)
+                weaknesses = self.ai_generator.generate_detailed_weaknesses(metrics_with_rating, agent_name)
+                recommendations = self.ai_generator.generate_actionable_recommendations(
+                    metrics_with_rating, strengths, weaknesses, agent_name
+                )
+                summary = self.ai_generator.generate_comprehensive_summary(
+                    metrics_with_rating,
+                    agent_name,
+                    self.report_type,
+                    str(self.start_date),
+                    str(self.end_date)
+                )
+                executive_summary = self.ai_generator.generate_executive_summary(
+                    metrics_with_rating, agent_name, self.report_type
+                )
+                
+                return {
+                    'strengths': strengths,
+                    'weaknesses': weaknesses,
+                    'recommendations': recommendations,
+                    'overall_rating': rating,
+                    'summary': summary,
+                    'executive_summary': executive_summary,
+                    'ai_generated': True
+                }
+            
+            except Exception as e:
+                import sys
+                print(f"[ERROR] AI generation failed: {str(e)}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
         strengths = []
         weaknesses = []
         recommendations = []
@@ -234,26 +308,14 @@ class PerformanceCalculator:
             weaknesses.append("Inconsistent performance - varies significantly between calls")
             recommendations.append("Work on maintaining steady performance standards")
         
-        avg_behavioral = behavioral['average_score'] or 0
-        if avg_behavioral >= 0.8:
-            rating = "excellent"
-            summary = "Outstanding performance - consistently exceeds expectations"
-        elif avg_behavioral >= 0.65:
-            rating = "good"
-            summary = "Solid performance - meets expectations with room for growth"
-        elif avg_behavioral >= 0.5:
-            rating = "needs_improvement"
-            summary = "Performance below expectations - requires focused development"
-        else:
-            rating = "poor"
-            summary = "Significant improvement needed - immediate coaching recommended"
-        
         return {
             'strengths': strengths,
             'weaknesses': weaknesses,
             'recommendations': recommendations,
             'overall_rating': rating,
-            'summary': summary,
+            'summary': base_summary,
+            'executive_summary': base_summary,
+            'ai_generated': False
         }
     
     def _calculate_trend(self, scores: List[float]) -> str:
@@ -274,10 +336,6 @@ class PerformanceCalculator:
             return "stable"
     
     def _enhance_with_weekly_data(self, metrics: Dict) -> Dict:
-        """
-        Enhance monthly metrics with insights from weekly reports.
-        This provides week-over-week trends and pattern analysis.
-        """
         weekly_behavioral_scores = []
         weekly_emotional_scores = []
         weekly_consistency_scores = []
@@ -290,18 +348,15 @@ class PerformanceCalculator:
             if week_report.performance_consistency_score:
                 weekly_consistency_scores.append(week_report.performance_consistency_score)
         
-        # Calculate week-over-week trend
         if len(weekly_behavioral_scores) >= 2:
             week_trend = self._calculate_trend(weekly_behavioral_scores)
             metrics['behavioral_metrics']['week_over_week_trend'] = week_trend
             
-            # Calculate improvement rate
             first_week = weekly_behavioral_scores[0]
             last_week = weekly_behavioral_scores[-1]
             improvement_rate = ((last_week - first_week) / first_week * 100) if first_week > 0 else 0
             metrics['behavioral_metrics']['improvement_rate'] = round(improvement_rate, 2)
         
-        # Identify best and worst weeks
         if weekly_behavioral_scores:
             best_week_idx = weekly_behavioral_scores.index(max(weekly_behavioral_scores))
             worst_week_idx = weekly_behavioral_scores.index(min(weekly_behavioral_scores))
@@ -309,27 +364,32 @@ class PerformanceCalculator:
             best_week_report = list(self.weekly_reports)[best_week_idx]
             worst_week_report = list(self.weekly_reports)[worst_week_idx]
             
-            metrics['weekly_analysis'] = {
+            weekly_analysis = {
                 'best_week': {
                     'start_date': str(best_week_report.start_date),
                     'end_date': str(best_week_report.end_date),
                     'behavioral_score': best_week_report.average_behavioral_score,
                     'total_calls': best_week_report.total_calls
                 },
-                'worst_week': {
+                'total_weeks_analyzed': self.weekly_reports.count()
+            }
+            
+            # Only include worst_week if there's more than 1 week AND it's different from best_week
+            if len(weekly_behavioral_scores) > 1 and best_week_idx != worst_week_idx:
+                weekly_analysis['worst_week'] = {
                     'start_date': str(worst_week_report.start_date),
                     'end_date': str(worst_week_report.end_date),
                     'behavioral_score': worst_week_report.average_behavioral_score,
                     'total_calls': worst_week_report.total_calls
-                },
-                'total_weeks_analyzed': self.weekly_reports.count()
-            }
+                }
+            
+            metrics['weekly_analysis'] = weekly_analysis
         
         if len(weekly_consistency_scores) >= 2:
             avg_weekly_consistency = statistics.mean(weekly_consistency_scores)
             metrics['consistency']['average_weekly_consistency'] = round(avg_weekly_consistency, 2)
         
-        if 'weekly_analysis' in metrics:
+        if 'weekly_analysis' in metrics and 'worst_week' in metrics['weekly_analysis']:
             best_week_score = metrics['weekly_analysis']['best_week']['behavioral_score']
             worst_week_score = metrics['weekly_analysis']['worst_week']['behavioral_score']
             score_variance = best_week_score - worst_week_score
@@ -347,6 +407,89 @@ class PerformanceCalculator:
                 )
         
         return metrics
+    
+    def _extract_call_evidence(self) -> Dict:
+        evidence = {
+            'total_calls': self.calls.count(),
+            'calls_analyzed': [],
+            'common_patterns': [],
+            'issues_found': [],
+            'positive_moments': []
+        }
+        
+        for call in self.calls[:10]:
+            call_data = {
+                'call_id': call.id,
+                'date': str(call.call_date.date()) if call.call_date else 'N/A',
+                'behavioral_score': call.behavioral_analysis.get('behavioral_score', 0) if call.behavioral_analysis else 0,
+                'emotional_outcome': None,
+                'topics': [],
+                'coaching_feedback': None
+            }
+            
+            if call.emotional_summary:
+                call_data['emotional_outcome'] = {
+                    'resolution': call.emotional_summary.get('resolution_status'),
+                    'satisfaction': call.emotional_summary.get('customer_satisfaction'),
+                    'agent_empathy': call.emotional_summary.get('agent_empathy_score'),
+                    'customer_frustration': call.emotional_summary.get('customer_frustration_level')
+                }
+                
+                if call.emotional_summary.get('resolution_status') == 'resolved':
+                    evidence['positive_moments'].append(f"Call {call.id}: Issue resolved successfully")
+                
+                if call.emotional_summary.get('customer_frustration_level', 0) > 0.5:
+                    evidence['issues_found'].append(f"Call {call.id}: High customer frustration ({call.emotional_summary.get('customer_frustration_level'):.2f})")
+            
+            if call.topic_analysis:
+                primary = call.topic_analysis.get('primary_topic')
+                if primary:
+                    call_data['topics'].append(primary)
+            
+            if call.coaching_tips:
+                if isinstance(call.coaching_tips, dict):
+                    call_data['coaching_feedback'] = call.coaching_tips.get('message', '')
+                    quality = call.coaching_tips.get('quality_status')
+                    if quality and quality != 'excellent':
+                        evidence['issues_found'].append(f"Call {call.id}: Quality status '{quality}'")
+            
+            evidence['calls_analyzed'].append(call_data)
+        
+        return evidence
+    
+    def _extract_weekly_evidence(self) -> Dict:
+        if not self.weekly_reports or not self.weekly_reports.exists():
+            return None
+        
+        evidence = {
+            'weeks_analyzed': self.weekly_reports.count(),
+            'weekly_performance': [],
+            'trends_observed': []
+        }
+        
+        weekly_scores = []
+        for week in self.weekly_reports:
+            week_data = {
+                'period': f"{week.start_date} to {week.end_date}",
+                'behavioral_score': week.average_behavioral_score,
+                'total_calls': week.total_calls,
+                'consistency': week.performance_consistency_score,
+                'strengths_count': len(week.strengths) if week.strengths else 0,
+                'weaknesses_count': len(week.weaknesses) if week.weaknesses else 0
+            }
+            evidence['weekly_performance'].append(week_data)
+            if week.average_behavioral_score:
+                weekly_scores.append(week.average_behavioral_score)
+        
+        if len(weekly_scores) >= 2:
+            if weekly_scores[-1] > weekly_scores[0]:
+                evidence['trends_observed'].append(f"Performance improved from {weekly_scores[0]:.2f} to {weekly_scores[-1]:.2f}")
+            elif weekly_scores[-1] < weekly_scores[0]:
+                evidence['trends_observed'].append(f"Performance declined from {weekly_scores[0]:.2f} to {weekly_scores[-1]:.2f}")
+            else:
+                evidence['trends_observed'].append(f"Consistent performance maintained at {weekly_scores[0]:.2f}")
+        
+        return evidence
     
     def _empty_report(self) -> Dict:
         return {
