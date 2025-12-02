@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'users',
     'company',
     'calls',
+    'reports',
 ]
 
 MIDDLEWARE = [
