@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Mic, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { setAuth } = useAuthStore();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -33,19 +37,11 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
-      // Store tokens and user data
-      localStorage.setItem("access_token", data.access);
-      localStorage.setItem("refresh_token", data.refresh);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Store in Zustand store (which also sets localStorage)
+      setAuth(data.user, data.access, data.refresh);
 
-      // Redirect based on role
-      if (data.user.role === "admin") {
-        window.location.href = "/dashboard/companies";
-      } else if (data.user.role === "head_of_department") {
-        window.location.href = "/dashboard/team";
-      } else {
-        window.location.href = "/dashboard/calls";
-      }
+      // Redirect to dashboard
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Invalid credentials. Please try again.");
     } finally {
