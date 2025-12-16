@@ -5,15 +5,25 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 export default function DashboardNavbar() {
+  // Read role after mount to avoid hydration mismatch
+  const [userRole, setUserRole] = useState<
+    "agent" | "head_of_department" | "admin"
+  >("agent");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("demo_role");
+    if (stored === "head_of_department" || stored === "admin") {
+      setUserRole(stored as "head_of_department" | "admin");
+    }
+  }, []);
+
   // Temporarily hardcoded user for demo purposes
   const user = {
     first_name: "Demo",
     last_name: "User",
     username: "demo_user",
     email: "demo@example.com",
-    role:
-      (typeof window !== "undefined" && localStorage.getItem("demo_role")) ||
-      "agent",
+    role: userRole,
   } as any;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -50,6 +60,18 @@ export default function DashboardNavbar() {
       window.removeEventListener("scroll", update, true);
     };
   }, [showProfileMenu]);
+
+  const switchRole = (role: "agent" | "head_of_department" | "admin") => {
+    localStorage.setItem("demo_role", role);
+    setUserRole(role);
+    setShowProfileMenu(false);
+    window.location.reload(); // Reload to update sidebar and other components
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem("demo_role");
+    window.location.href = "/login";
+  };
 
   return (
     <header className="bg-slate-900/50 backdrop-blur-md border-b border-white/10 px-6 py-4">
@@ -224,21 +246,6 @@ function maskEmail(email: string | undefined) {
   const maskedName =
     name.length > 2 ? name[0] + "***" + name[name.length - 1] : name;
   return `${maskedName}@${domain}`;
-}
-
-function switchRole(role: "agent" | "head_of_department" | "admin") {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("demo_role", role);
-    window.location.reload();
-  }
-}
-
-function confirmLogout() {
-  if (typeof window !== "undefined") {
-    // Clear demo_role for cleanliness
-    localStorage.removeItem("demo_role");
-    window.location.href = "/login";
-  }
 }
 
 function formatRoleLabel(role: string | undefined) {

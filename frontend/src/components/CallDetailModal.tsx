@@ -1,0 +1,1021 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  X,
+  Phone,
+  Clock,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  Smile,
+  Frown,
+  Meh,
+  Heart,
+  MessageSquare,
+  Activity,
+  Award,
+  AlertCircle,
+  CheckCircle,
+  Lightbulb,
+  BarChart3,
+} from "lucide-react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+} from "recharts";
+import { api } from "@/lib/api";
+
+interface CallDetailModalProps {
+  callId: number;
+  onClose: () => void;
+}
+
+interface CallDetail {
+  id: number;
+  agent_name: string;
+  call_date: string;
+  duration: number;
+  transcript: any;
+  transcript_summary: any;
+  emotional_analysis: any;
+  emotional_summary: any;
+  behavioral_analysis: any;
+  behavioral_summary: any;
+  coaching_tips: any;
+  topic_analysis: any;
+}
+
+export default function CallDetailModal({
+  callId,
+  onClose,
+}: CallDetailModalProps) {
+  const [call, setCall] = useState<CallDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "transcript" | "emotions" | "behavior" | "coaching"
+  >("overview");
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let root = document.getElementById("modal-portal");
+    if (!root) {
+      root = document.createElement("div");
+      root.id = "modal-portal";
+      document.body.appendChild(root);
+    }
+    setPortalRoot(root);
+
+    return () => {
+      if (root && root.childNodes.length === 0) {
+        document.body.removeChild(root);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchCallDetail();
+  }, [callId]);
+
+  const fetchCallDetail = async () => {
+    try {
+      setLoading(true);
+      // Mock data for demo - replace with: const response = await api.calls.getById(callId);
+      const mockCall = {
+        id: callId,
+        agent_name: "Demo Agent",
+        call_date: new Date().toISOString(),
+        duration: 456,
+        transcript: {
+          text: "Agent: Good morning! Thank you for calling. How can I help you today?\n\nCustomer: Hi, I'm having issues with my recent order. It hasn't arrived yet.\n\nAgent: I'm sorry to hear that. Let me look into this for you. Can you please provide your order number?\n\nCustomer: Yes, it's ORDER-12345.\n\nAgent: Thank you. I see your order here. It shows it was shipped 3 days ago and should arrive by tomorrow. Would you like me to provide the tracking number?\n\nCustomer: Yes, please. That would be helpful.\n\nAgent: The tracking number is TRACK-67890. You can track it on our website. Is there anything else I can help you with?\n\nCustomer: No, that's all. Thank you for your help!\n\nAgent: You're welcome! Have a great day!",
+          segments: [
+            {
+              start: 0,
+              end: 5.2,
+              text: "Good morning! Thank you for calling.",
+              speaker: "agent",
+            },
+            {
+              start: 5.5,
+              end: 10.8,
+              text: "Hi, I'm having issues with my recent order.",
+              speaker: "customer",
+            },
+          ],
+        },
+        transcript_summary: {
+          summary:
+            "Customer called regarding a delayed order. Agent provided tracking information and resolved the issue successfully.",
+          key_points: [
+            "Order tracking inquiry",
+            "Provided tracking number",
+            "Customer satisfied with resolution",
+          ],
+        },
+        emotional_analysis: {
+          turns: [
+            {
+              speaker: "agent",
+              emotion: "happy",
+              confidence: 0.92,
+              sentiment: "positive",
+            },
+            {
+              speaker: "customer",
+              emotion: "frustrated",
+              confidence: 0.78,
+              sentiment: "negative",
+            },
+            {
+              speaker: "agent",
+              emotion: "neutral",
+              confidence: 0.85,
+              sentiment: "neutral",
+            },
+            {
+              speaker: "customer",
+              emotion: "happy",
+              confidence: 0.88,
+              sentiment: "positive",
+            },
+          ],
+          emotion_timeline: [
+            { time: 0, emotion: "happy", speaker: "agent" },
+            { time: 5, emotion: "frustrated", speaker: "customer" },
+            { time: 20, emotion: "neutral", speaker: "agent" },
+            { time: 40, emotion: "happy", speaker: "customer" },
+          ],
+        },
+        emotional_summary: {
+          overall_sentiment: "positive",
+          agent_sentiment: "positive",
+          customer_sentiment: "improved from negative to positive",
+          emotion_distribution: {
+            happy: 45,
+            frustrated: 20,
+            neutral: 30,
+            sad: 5,
+          },
+          key_emotional_moments: [
+            "Customer started frustrated about order delay",
+            "Agent remained calm and professional",
+            "Customer ended satisfied with resolution",
+          ],
+        },
+        behavioral_analysis: {
+          words_per_minute: {
+            agent_wpm: 145,
+            customer_wpm: 132,
+            agent_assessment: "optimal",
+            customer_assessment: "good",
+          },
+          silence_analysis: {
+            total_silence_duration: 12.5,
+            silence_count: 8,
+            avg_silence_duration: 1.56,
+            assessment: "good",
+          },
+          interruption_analysis: {
+            agent_interruptions: 1,
+            customer_interruptions: 0,
+            total_interruptions: 1,
+            assessment: "excellent",
+          },
+          response_time_analysis: {
+            agent_avg_response_time: 1.2,
+            customer_avg_response_time: 1.8,
+            agent_assessment: "excellent",
+          },
+          question_analysis: {
+            agent_questions: 3,
+            customer_questions: 1,
+            agent_open_questions: 2,
+            agent_closed_questions: 1,
+          },
+          active_listening: {
+            acknowledgment_count: 5,
+            empathy_phrases: ["I'm sorry to hear that", "I understand"],
+            clarification_questions: 2,
+            assessment: "excellent",
+          },
+          behavioral_score: 87,
+        },
+        behavioral_summary: {
+          summary:
+            "Agent demonstrated excellent communication skills with optimal pacing, active listening, and minimal interruptions.",
+          strengths: [
+            "Excellent response time",
+            "Active listening with empathy",
+            "Minimal interruptions",
+          ],
+          areas_for_improvement: [
+            "Could use more open-ended questions",
+            "Slightly reduce speaking pace in complex explanations",
+          ],
+        },
+        coaching_tips: {
+          tips: [
+            {
+              category: "Communication",
+              tip: "Great job maintaining a calm and professional tone throughout the call",
+              priority: "positive",
+            },
+            {
+              category: "Active Listening",
+              tip: "Excellent use of empathy phrases. Customer felt heard and understood",
+              priority: "positive",
+            },
+            {
+              category: "Problem Solving",
+              tip: "Consider proactively offering alternative solutions before providing tracking info",
+              priority: "improvement",
+            },
+            {
+              category: "Closing",
+              tip: "Try to summarize the resolution and confirm customer satisfaction before ending",
+              priority: "improvement",
+            },
+          ],
+        },
+        topic_analysis: {
+          main_topics: [
+            { topic: "Order Tracking", relevance: 0.92 },
+            { topic: "Customer Support", relevance: 0.85 },
+            { topic: "Delivery Issues", relevance: 0.78 },
+          ],
+          keywords: [
+            "order",
+            "tracking",
+            "delivery",
+            "shipped",
+            "tracking number",
+          ],
+        },
+      };
+      setCall(mockCall);
+    } catch (error) {
+      console.error("Failed to fetch call details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getEmotionIcon = (emotion: string) => {
+    switch (emotion.toLowerCase()) {
+      case "happy":
+        return <Smile className="w-5 h-5 text-green-400" />;
+      case "sad":
+        return <Frown className="w-5 h-5 text-blue-400" />;
+      case "frustrated":
+        return <AlertCircle className="w-5 h-5 text-orange-400" />;
+      default:
+        return <Meh className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  const getSentimentColor = (sentiment: string) => {
+    switch (sentiment.toLowerCase()) {
+      case "positive":
+        return "text-green-400";
+      case "negative":
+        return "text-red-400";
+      default:
+        return "text-gray-400";
+    }
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-400";
+    if (score >= 60) return "text-yellow-400";
+    return "text-red-400";
+  };
+
+  const EMOTION_COLORS = {
+    happy: "#10b981",
+    frustrated: "#f59e0b",
+    neutral: "#6b7280",
+    sad: "#3b82f6",
+    angry: "#ef4444",
+    confused: "#8b5cf6",
+  };
+
+  const renderOverview = () => {
+    if (!call) return null;
+
+    const emotionData = call.emotional_summary?.emotion_distribution
+      ? Object.entries(call.emotional_summary.emotion_distribution).map(
+          ([name, value]) => ({
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            value,
+          })
+        )
+      : [];
+
+    const behaviorRadarData = [
+      {
+        metric: "Response Time",
+        score:
+          call.behavioral_analysis?.response_time_analysis
+            ?.agent_avg_response_time <= 1.5
+            ? 95
+            : 70,
+      },
+      {
+        metric: "Speaking Pace",
+        score:
+          call.behavioral_analysis?.words_per_minute?.agent_wpm >= 140 &&
+          call.behavioral_analysis?.words_per_minute?.agent_wpm <= 160
+            ? 90
+            : 75,
+      },
+      {
+        metric: "Active Listening",
+        score: call.behavioral_analysis?.active_listening?.acknowledgment_count
+          ? call.behavioral_analysis.active_listening.acknowledgment_count * 15
+          : 80,
+      },
+      { metric: "Interruptions", score: 95 },
+      {
+        metric: "Questions",
+        score:
+          (call.behavioral_analysis?.question_analysis?.agent_questions || 0) *
+          20,
+      },
+    ];
+
+    return (
+      <div className="space-y-6">
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Overall Score</p>
+                <p
+                  className={`text-3xl font-bold mt-1 ${getScoreColor(
+                    call.behavioral_analysis?.behavioral_score || 0
+                  )}`}
+                >
+                  {call.behavioral_analysis?.behavioral_score || 0}
+                  <span className="text-lg">/100</span>
+                </p>
+              </div>
+              <Award className="w-10 h-10 text-yellow-400" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Sentiment</p>
+                <p
+                  className={`text-xl font-bold mt-1 capitalize ${getSentimentColor(
+                    call.emotional_summary?.overall_sentiment || "neutral"
+                  )}`}
+                >
+                  {call.emotional_summary?.overall_sentiment || "Neutral"}
+                </p>
+              </div>
+              <Heart className="w-10 h-10 text-pink-400" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Duration</p>
+                <p className="text-3xl font-bold text-white mt-1">
+                  {formatDuration(call.duration)}
+                </p>
+              </div>
+              <Clock className="w-10 h-10 text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Emotion Distribution Pie Chart */}
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <Smile className="w-5 h-5 mr-2 text-yellow-400" />
+              Emotion Distribution
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={emotionData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) =>
+                    `${name}: ${((percent || 0) * 100).toFixed(0)}%`
+                  }
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {emotionData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        EMOTION_COLORS[
+                          entry.name.toLowerCase() as keyof typeof EMOTION_COLORS
+                        ] || "#6b7280"
+                      }
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(15, 23, 42, 0.9)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "0.5rem",
+                    color: "#fff",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Behavioral Radar Chart */}
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <Activity className="w-5 h-5 mr-2 text-cyan-400" />
+              Performance Radar
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={behaviorRadarData}>
+                <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
+                <PolarAngleAxis
+                  dataKey="metric"
+                  tick={{ fill: "#9ca3af", fontSize: 12 }}
+                />
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, 100]}
+                  tick={{ fill: "#9ca3af" }}
+                />
+                <Radar
+                  name="Performance"
+                  dataKey="score"
+                  stroke="#06b6d4"
+                  fill="#06b6d4"
+                  fillOpacity={0.6}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(15, 23, 42, 0.9)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "0.5rem",
+                    color: "#fff",
+                  }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Summary Section */}
+        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <MessageSquare className="w-5 h-5 mr-2 text-blue-400" />
+            Call Summary
+          </h3>
+          <p className="text-gray-300 leading-relaxed">
+            {call.transcript_summary?.summary ||
+              "No summary available for this call."}
+          </p>
+          {call.transcript_summary?.key_points &&
+            call.transcript_summary.key_points.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-400 mb-2">
+                  Key Points:
+                </p>
+                <ul className="space-y-2">
+                  {call.transcript_summary.key_points.map(
+                    (point: string, index: number) => (
+                      <li key={index} className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-300">{point}</span>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderTranscript = () => {
+    if (!call) return null;
+
+    return (
+      <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <MessageSquare className="w-5 h-5 mr-2 text-blue-400" />
+          Full Transcript
+        </h3>
+        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+          {call.transcript?.text ? (
+            <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
+              {call.transcript.text}
+            </div>
+          ) : (
+            <p className="text-gray-400">No transcript available</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderEmotions = () => {
+    if (!call) return null;
+
+    const emotionTimelineData =
+      call.emotional_analysis?.emotion_timeline?.map((item: any) => ({
+        time: `${item.time}s`,
+        emotion: item.emotion,
+        speaker: item.speaker,
+      })) || [];
+
+    return (
+      <div className="space-y-6">
+        {/* Emotion Timeline */}
+        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <TrendingUp className="w-5 h-5 mr-2 text-purple-400" />
+            Emotional Journey
+          </h3>
+          <div className="space-y-4">
+            {call.emotional_summary?.key_emotional_moments?.map(
+              (moment: string, index: number) => (
+                <div
+                  key={index}
+                  className="flex items-start space-x-3 p-3 bg-slate-800/50 rounded-lg"
+                >
+                  <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-purple-400 text-sm font-medium">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <p className="text-gray-300 flex-1">{moment}</p>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Detailed Turn Analysis */}
+        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <Activity className="w-5 h-5 mr-2 text-cyan-400" />
+            Turn-by-Turn Emotions
+          </h3>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            {call.emotional_analysis?.turns?.map((turn: any, index: number) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      turn.speaker === "agent"
+                        ? "bg-blue-500/20 text-blue-400"
+                        : "bg-green-500/20 text-green-400"
+                    }`}
+                  >
+                    {turn.speaker.toUpperCase()}
+                  </div>
+                  {getEmotionIcon(turn.emotion)}
+                  <span className="text-gray-300 capitalize">
+                    {turn.emotion}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span
+                    className={`text-sm font-medium ${getSentimentColor(
+                      turn.sentiment
+                    )}`}
+                  >
+                    {turn.sentiment}
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    {(turn.confidence * 100).toFixed(0)}% confidence
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBehavior = () => {
+    if (!call) return null;
+
+    const wpmData = [
+      {
+        name: "Agent",
+        wpm: call.behavioral_analysis?.words_per_minute?.agent_wpm || 0,
+        optimal: 150,
+      },
+      {
+        name: "Customer",
+        wpm: call.behavioral_analysis?.words_per_minute?.customer_wpm || 0,
+        optimal: 150,
+      },
+    ];
+
+    return (
+      <div className="space-y-6">
+        {/* Words Per Minute Chart */}
+        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <BarChart3 className="w-5 h-5 mr-2 text-blue-400" />
+            Speaking Pace (Words Per Minute)
+          </h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={wpmData}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.1)"
+              />
+              <XAxis dataKey="name" tick={{ fill: "#9ca3af" }} />
+              <YAxis tick={{ fill: "#9ca3af" }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(15, 23, 42, 0.9)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "0.5rem",
+                  color: "#fff",
+                }}
+              />
+              <Legend />
+              <Bar dataKey="wpm" fill="#3b82f6" name="Actual WPM" />
+              <Bar dataKey="optimal" fill="#10b981" name="Optimal WPM" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Behavioral Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-400 mb-3">
+              Response Time
+            </h4>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-3xl font-bold text-white">
+                  {call.behavioral_analysis?.response_time_analysis?.agent_avg_response_time?.toFixed(
+                    1
+                  ) || 0}
+                  <span className="text-sm text-gray-400">s</span>
+                </p>
+                <p className="text-sm text-green-400 mt-1">
+                  {call.behavioral_analysis?.response_time_analysis
+                    ?.agent_assessment || "Good"}
+                </p>
+              </div>
+              <Clock className="w-8 h-8 text-cyan-400" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-400 mb-3">
+              Interruptions
+            </h4>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-3xl font-bold text-white">
+                  {call.behavioral_analysis?.interruption_analysis
+                    ?.total_interruptions || 0}
+                </p>
+                <p className="text-sm text-green-400 mt-1">
+                  {call.behavioral_analysis?.interruption_analysis
+                    ?.assessment || "Excellent"}
+                </p>
+              </div>
+              <AlertCircle className="w-8 h-8 text-orange-400" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-400 mb-3">
+              Questions Asked
+            </h4>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-3xl font-bold text-white">
+                  {call.behavioral_analysis?.question_analysis
+                    ?.agent_questions || 0}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {call.behavioral_analysis?.question_analysis
+                    ?.agent_open_questions || 0}{" "}
+                  open,{" "}
+                  {call.behavioral_analysis?.question_analysis
+                    ?.agent_closed_questions || 0}{" "}
+                  closed
+                </p>
+              </div>
+              <MessageSquare className="w-8 h-8 text-purple-400" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-400 mb-3">
+              Active Listening
+            </h4>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-3xl font-bold text-white">
+                  {call.behavioral_analysis?.active_listening
+                    ?.acknowledgment_count || 0}
+                </p>
+                <p className="text-sm text-green-400 mt-1">
+                  {call.behavioral_analysis?.active_listening?.assessment ||
+                    "Good"}
+                </p>
+              </div>
+              <Heart className="w-8 h-8 text-pink-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Strengths and Areas for Improvement */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
+              Strengths
+            </h3>
+            <ul className="space-y-2">
+              {call.behavioral_summary?.strengths?.map(
+                (strength: string, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <TrendingUp className="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-300">{strength}</span>
+                  </li>
+                )
+              )}
+            </ul>
+          </div>
+
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <TrendingDown className="w-5 h-5 mr-2 text-orange-400" />
+              Areas for Improvement
+            </h3>
+            <ul className="space-y-2">
+              {call.behavioral_summary?.areas_for_improvement?.map(
+                (area: string, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <AlertCircle className="w-4 h-4 text-orange-400 mr-2 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-300">{area}</span>
+                  </li>
+                )
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCoaching = () => {
+    if (!call) return null;
+
+    const positiveTips =
+      call.coaching_tips?.tips?.filter(
+        (tip: any) => tip.priority === "positive"
+      ) || [];
+    const improvementTips =
+      call.coaching_tips?.tips?.filter(
+        (tip: any) => tip.priority === "improvement"
+      ) || [];
+
+    return (
+      <div className="space-y-6">
+        {/* Positive Feedback */}
+        {positiveTips.length > 0 && (
+          <div className="bg-slate-900/50 border border-green-500/20 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
+              What You Did Well
+            </h3>
+            <div className="space-y-4">
+              {positiveTips.map((tip: any, index: number) => (
+                <div
+                  key={index}
+                  className="flex items-start space-x-3 p-4 bg-green-500/10 border border-green-500/20 rounded-lg"
+                >
+                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Award className="w-5 h-5 text-green-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-green-400 mb-1">
+                      {tip.category}
+                    </h4>
+                    <p className="text-gray-300">{tip.tip}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Improvement Areas */}
+        {improvementTips.length > 0 && (
+          <div className="bg-slate-900/50 border border-orange-500/20 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <Lightbulb className="w-5 h-5 mr-2 text-orange-400" />
+              Areas to Improve
+            </h3>
+            <div className="space-y-4">
+              {improvementTips.map((tip: any, index: number) => (
+                <div
+                  key={index}
+                  className="flex items-start space-x-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg"
+                >
+                  <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-orange-400 mb-1">
+                      {tip.category}
+                    </h4>
+                    <p className="text-gray-300">{tip.tip}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Topics Discussed */}
+        {call.topic_analysis?.main_topics && (
+          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2 text-blue-400" />
+              Topics Discussed
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {call.topic_analysis.main_topics.map(
+                (topic: any, index: number) => (
+                  <div
+                    key={index}
+                    className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg"
+                  >
+                    <span className="text-blue-400 font-medium">
+                      {topic.topic}
+                    </span>
+                    <span className="text-gray-400 text-sm ml-2">
+                      {(topic.relevance * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (!portalRoot) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
+              <Phone className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">
+                Call #{callId} Details
+              </h2>
+              {call && (
+                <div className="flex items-center space-x-4 mt-1 text-sm text-gray-400">
+                  <span className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    {formatDate(call.call_date)}
+                  </span>
+                  <span className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {formatDuration(call.duration)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <X className="w-6 h-6 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="px-6 pt-4 border-b border-white/10">
+          <div className="flex space-x-1">
+            {[
+              { id: "overview", label: "Overview" },
+              { id: "transcript", label: "Transcript" },
+              { id: "emotions", label: "Emotions" },
+              { id: "behavior", label: "Behavior" },
+              { id: "coaching", label: "Coaching" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() =>
+                  setActiveTab(
+                    tab.id as
+                      | "overview"
+                      | "transcript"
+                      | "emotions"
+                      | "behavior"
+                      | "coaching"
+                  )
+                }
+                className={`px-6 py-3 rounded-t-lg font-medium transition-all ${
+                  activeTab === tab.id
+                    ? "bg-slate-900/50 text-white border-t border-x border-white/10"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <>
+              {activeTab === "overview" && renderOverview()}
+              {activeTab === "transcript" && renderTranscript()}
+              {activeTab === "emotions" && renderEmotions()}
+              {activeTab === "behavior" && renderBehavior()}
+              {activeTab === "coaching" && renderCoaching()}
+            </>
+          )}
+        </div>
+      </div>
+    </div>,
+    portalRoot
+  );
+}
