@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -28,6 +28,7 @@ export default function DashboardNavbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const profileButtonRef = useRef<HTMLButtonElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(
     null
   );
@@ -44,6 +45,29 @@ export default function DashboardNavbar() {
       portalRootRef.current = null;
     };
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showProfileMenu &&
+        profileMenuRef.current &&
+        profileButtonRef.current &&
+        !profileMenuRef.current.contains(event.target as Node) &&
+        !profileButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    if (showProfileMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showProfileMenu]);
 
   // Recompute dropdown position on resize/scroll when it's open
   useEffect(() => {
@@ -128,72 +152,98 @@ export default function DashboardNavbar() {
             {showProfileMenu && portalRootRef.current && coords
               ? createPortal(
                   <div
-                    className="w-64 bg-slate-800 border border-white/10 rounded-lg shadow-xl py-2"
+                    ref={profileMenuRef}
+                    className="w-72 bg-gradient-to-b from-slate-800 to-slate-900 border border-white/20 rounded-xl shadow-2xl py-2 backdrop-blur-md"
                     style={{
                       position: "fixed",
                       top: coords.top,
-                      left: Math.max(8, coords.left - 256),
+                      left: Math.max(8, coords.left - 288),
                       zIndex: 99999,
                       overflow: "visible",
                     }}
                   >
-                    <div className="px-4 py-3 border-b border-white/10">
-                      <p className="text-sm font-medium text-white">
-                        {user?.first_name} {user?.last_name}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {maskEmail(user?.email)}
-                      </p>
-                      <div className="mt-2">
-                        <span className="inline-block px-2 py-0.5 text-xs font-medium bg-slate-700 text-gray-200 rounded">
+                    {/* User Info Header */}
+                    <div className="px-5 py-4 border-b border-white/10">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-semibold text-white truncate">
+                            {user?.first_name} {user?.last_name}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {maskEmail(user?.email)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-gradient-to-r from-blue-600/20 to-cyan-600/20 text-blue-300 rounded-full border border-blue-500/30">
                           {formatRoleLabel(String(user?.role || ""))}
                         </span>
                       </div>
                     </div>
-                    <a
-                      href="/dashboard/profile"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-                    >
-                      Profile Settings
-                    </a>
-                    <a
-                      href="/dashboard/settings"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-                    >
-                      Account Settings
-                    </a>
 
-                    <div className="px-4 py-2 border-t border-white/10">
-                      <p className="text-xs text-gray-400 mb-2">
+                    {/* Profile Settings Link */}
+                    <div className="py-2">
+                      <a
+                        href="/dashboard/profile"
+                        className="flex items-center px-5 py-2.5 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        <User className="w-4 h-4 mr-3 text-gray-400" />
+                        Profile Settings
+                      </a>
+                    </div>
+
+                    {/* Demo Role Switcher */}
+                    <div className="px-5 py-3 border-t border-white/10">
+                      <p className="text-xs font-medium text-gray-400 mb-3">
                         Switch demo role
                       </p>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           onClick={() => switchRole("agent")}
-                          className="flex-1 py-2 text-sm rounded bg-slate-700 text-white hover:bg-slate-600"
+                          className={`py-2 px-3 text-xs font-medium rounded-lg transition-all ${
+                            userRole === "agent"
+                              ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg"
+                              : "bg-slate-700/50 text-gray-300 hover:bg-slate-600"
+                          }`}
                         >
                           Agent
                         </button>
                         <button
                           onClick={() => switchRole("head_of_department")}
-                          className="flex-1 py-2 text-sm rounded bg-slate-700 text-white hover:bg-slate-600"
+                          className={`py-2 px-3 text-xs font-medium rounded-lg transition-all ${
+                            userRole === "head_of_department"
+                              ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg"
+                              : "bg-slate-700/50 text-gray-300 hover:bg-slate-600"
+                          }`}
                         >
                           Head
                         </button>
                         <button
                           onClick={() => switchRole("admin")}
-                          className="flex-1 py-2 text-sm rounded bg-slate-700 text-white hover:bg-slate-600"
+                          className={`py-2 px-3 text-xs font-medium rounded-lg transition-all ${
+                            userRole === "admin"
+                              ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg"
+                              : "bg-slate-700/50 text-gray-300 hover:bg-slate-600"
+                          }`}
                         >
                           Admin
                         </button>
                       </div>
                     </div>
 
-                    <div className="border-t border-white/10 mt-2 pt-2 px-4">
+                    {/* Logout Button */}
+                    <div className="border-t border-white/10 pt-2 pb-2 px-2">
                       <button
-                        onClick={() => setShowLogoutConfirm(true)}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          setShowLogoutConfirm(true);
+                        }}
+                        className="flex items-center w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                       >
+                        <LogOut className="w-4 h-4 mr-3" />
                         Logout
                       </button>
                     </div>

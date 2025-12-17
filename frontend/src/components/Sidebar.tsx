@@ -49,8 +49,8 @@ export default function Sidebar({ userRole }: SidebarProps) {
     agent: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/calls", label: "My Calls", icon: Phone },
-      { href: "/dashboard/calls/upload", label: "Upload Call", icon: Phone },
-      { href: "/dashboard/reports", label: "My Reports", icon: FileText },
+      { href: "/dashboard/upload-call", label: "Upload Call", icon: Phone },
+      { href: "/dashboard/my-reports", label: "My Reports", icon: FileText },
       { href: "/dashboard/profile", label: "Profile", icon: User },
     ],
   };
@@ -61,10 +61,10 @@ export default function Sidebar({ userRole }: SidebarProps) {
     <aside
       className={`${
         collapsed ? "w-20" : "w-64"
-      } bg-slate-900/50 backdrop-blur-md border-r border-white/10 transition-all duration-300 flex flex-col`}
+      } bg-slate-900/50 backdrop-blur-md border-r border-white/10 transition-all duration-300 flex flex-col h-screen`}
     >
       {/* Sidebar Header */}
-      <div className="p-4 border-b border-white/10 flex items-center justify-between">
+      <div className="p-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
         {!collapsed && (
           <h2 className="text-white font-semibold text-lg">Dashboard</h2>
         )}
@@ -81,7 +81,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -102,17 +102,6 @@ export default function Sidebar({ userRole }: SidebarProps) {
           );
         })}
       </nav>
-
-      {/* Logout Button */}
-      <div className="p-4 border-t border-white/10">
-        <button
-          onClick={handleLogout}
-          className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-gray-400 hover:text-white hover:bg-red-500/10 hover:border-red-500/30 w-full"
-        >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="font-medium">Logout</span>}
-        </button>
-      </div>
     </aside>
   );
 }

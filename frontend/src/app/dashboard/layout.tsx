@@ -27,7 +27,7 @@ export default function DashboardLayout({
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex">
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex overflow-hidden">
       {/* Sidebar */}
       <Sidebar userRole={role} />
 

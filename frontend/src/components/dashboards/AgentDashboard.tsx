@@ -88,7 +88,7 @@ export default function AgentDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Link
-          href="/dashboard/calls/upload"
+          href="/dashboard/upload-call"
           className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
         >
           <div className="flex items-center justify-between mb-4">
@@ -106,16 +106,16 @@ export default function AgentDashboard() {
         </Link>
 
         <Link
-          href="/dashboard/calls"
+          href="/dashboard/my-reports"
           className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Phone className="w-6 h-6 text-cyan-400" />
+              <FileText className="w-6 h-6 text-cyan-400" />
             </div>
-            <span className="text-cyan-400 text-sm font-medium">View All</span>
+            <span className="text-cyan-400 text-sm font-medium">View</span>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">My Calls</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">My Reports</h3>
           <p className="text-gray-400 text-sm">
             View and analyze all your call recordings
           </p>
