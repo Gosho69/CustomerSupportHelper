@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AllCalls } from "@/components/calls";
 import {
   Phone,
   Calendar,
@@ -24,11 +25,6 @@ interface Call {
 }
 
 export default function CallsPage() {
-  const [calls, setCalls] = useState<Call[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterDuration, setFilterDuration] = useState<string>("all");
   const [userRole, setUserRole] = useState<
     "agent" | "head_of_department" | "admin"
   >("agent");
@@ -43,6 +39,25 @@ export default function CallsPage() {
     if (storedRole) {
       setUserRole(storedRole);
     }
+  }, []);
+
+  // If user is head of department, show the new AllCalls component
+  if (userRole === "head_of_department") {
+    return <AllCalls />;
+  }
+
+  // For agents, show the existing agent calls view
+  return <AgentCallsView />;
+}
+
+function AgentCallsView() {
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterDuration, setFilterDuration] = useState<string>("all");
+
+  useEffect(() => {
     fetchCalls();
   }, []);
 
@@ -51,125 +66,37 @@ export default function CallsPage() {
       setLoading(true);
       // Mock data for demo - replace with: const response = await api.calls.list();
 
-      // Generate different mock data based on role
-      const mockCalls =
-        userRole === "agent"
-          ? [
-              // Agent only sees their own calls
-              {
-                id: 1,
-                agent_name: "You",
-                call_date: new Date(
-                  Date.now() - 2 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 456,
-                created_at: new Date(
-                  Date.now() - 2 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 2,
-                agent_name: "You",
-                call_date: new Date(
-                  Date.now() - 24 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 723,
-                created_at: new Date(
-                  Date.now() - 24 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 3,
-                agent_name: "You",
-                call_date: new Date(
-                  Date.now() - 48 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 312,
-                created_at: new Date(
-                  Date.now() - 48 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 4,
-                agent_name: "You",
-                call_date: new Date(
-                  Date.now() - 72 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 589,
-                created_at: new Date(
-                  Date.now() - 72 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-            ]
-          : [
-              // Head of department sees all team calls
-              {
-                id: 1,
-                agent_name: "John Smith",
-                call_date: new Date(
-                  Date.now() - 2 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 456,
-                created_at: new Date(
-                  Date.now() - 2 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 2,
-                agent_name: "Sarah Johnson",
-                call_date: new Date(
-                  Date.now() - 5 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 723,
-                created_at: new Date(
-                  Date.now() - 5 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 3,
-                agent_name: "John Smith",
-                call_date: new Date(
-                  Date.now() - 24 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 312,
-                created_at: new Date(
-                  Date.now() - 24 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 4,
-                agent_name: "Mike Wilson",
-                call_date: new Date(
-                  Date.now() - 30 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 654,
-                created_at: new Date(
-                  Date.now() - 30 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 5,
-                agent_name: "Sarah Johnson",
-                call_date: new Date(
-                  Date.now() - 48 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 892,
-                created_at: new Date(
-                  Date.now() - 48 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-              {
-                id: 6,
-                agent_name: "Mike Wilson",
-                call_date: new Date(
-                  Date.now() - 60 * 60 * 60 * 1000
-                ).toISOString(),
-                duration: 234,
-                created_at: new Date(
-                  Date.now() - 60 * 60 * 60 * 1000
-                ).toISOString(),
-              },
-            ];
+      const mockCalls = [
+        // Agent only sees their own calls
+        {
+          id: 1,
+          agent_name: "You",
+          call_date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          duration: 456,
+          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 2,
+          agent_name: "You",
+          call_date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          duration: 723,
+          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 3,
+          agent_name: "You",
+          call_date: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+          duration: 312,
+          created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 4,
+          agent_name: "You",
+          call_date: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+          duration: 589,
+          created_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+        },
+      ];
       setCalls(mockCalls);
     } catch (error) {
       console.error("Failed to fetch calls:", error);
@@ -228,21 +155,15 @@ export default function CallsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">
-            {userRole === "agent" ? "My Calls" : "Team Calls"}
-          </h1>
+          <h1 className="text-3xl font-bold text-white">My Calls</h1>
           <p className="text-gray-400 mt-1">
-            {userRole === "agent"
-              ? "View and analyze all your call recordings"
-              : "View and analyze all team member call recordings"}
+            View and analyze all your call recordings
           </p>
         </div>
-        {userRole === "agent" && (
-          <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-lg shadow-blue-500/30 flex items-center space-x-2">
-            <Upload className="w-5 h-5" />
-            <span>Upload Call</span>
-          </button>
-        )}
+        <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200 shadow-lg shadow-blue-500/30 flex items-center space-x-2">
+          <Upload className="w-5 h-5" />
+          <span>Upload Call</span>
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -297,11 +218,7 @@ export default function CallsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder={
-                userRole === "agent"
-                  ? "Search calls..."
-                  : "Search by agent name..."
-              }
+              placeholder="Search calls..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
@@ -343,11 +260,6 @@ export default function CallsPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Call ID
                   </th>
-                  {userRole !== "agent" && (
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                      Agent
-                    </th>
-                  )}
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Date & Time
                   </th>
@@ -371,18 +283,6 @@ export default function CallsPage() {
                         #{call.id}
                       </span>
                     </td>
-                    {userRole !== "agent" && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3">
-                            {call.agent_name.charAt(0)}
-                          </div>
-                          <span className="text-sm text-white">
-                            {call.agent_name}
-                          </span>
-                        </div>
-                      </td>
-                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-300">
                         <Calendar className="w-4 h-4 mr-2 text-gray-400" />

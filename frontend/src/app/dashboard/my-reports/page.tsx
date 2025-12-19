@@ -1,5 +1,5 @@
-import MyReports from "@/components/agent/MyReports";
+import { AgentReports } from "@/components/reports";
 
 export default function MyReportsPage() {
-  return <MyReports />;
+  return <AgentReports />;
 }

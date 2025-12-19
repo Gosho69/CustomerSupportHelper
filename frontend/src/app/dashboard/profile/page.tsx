@@ -1,5 +1,5 @@
-import AgentProfile from "@/components/agent/AgentProfile";
+import Profile from "@/components/Profile";
 
 export default function ProfilePage() {
-  return <AgentProfile />;
+  return <Profile />;
 }

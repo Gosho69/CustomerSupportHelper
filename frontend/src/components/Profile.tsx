@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Mail,
   Phone,
@@ -28,9 +28,36 @@ import {
   Tooltip,
 } from "recharts";
 
-export default function AgentProfile() {
+export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<
+    "agent" | "head_of_department" | "admin"
+  >("agent");
+
+  useEffect(() => {
+    const storedRole = localStorage.getItem("demo_role");
+    if (
+      storedRole === "head_of_department" ||
+      storedRole === "admin" ||
+      storedRole === "agent"
+    ) {
+      setUserRole(storedRole as "agent" | "head_of_department" | "admin");
+    }
+  }, []);
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "agent":
+        return "Support Agent";
+      case "head_of_department":
+        return "Head of Department";
+      case "admin":
+        return "Administrator";
+      default:
+        return "Support Agent";
+    }
+  };
 
   const profile = {
     firstName: "John",
@@ -39,7 +66,7 @@ export default function AgentProfile() {
     phone: "+1 (555) 123-4567",
     company: "Tech Solutions Inc",
     department: "Customer Support",
-    role: "Support Agent",
+    role: getRoleLabel(userRole),
     joinDate: "Jan 15, 2024",
     avatar: null,
   };

@@ -37,14 +37,14 @@ export default function Sidebar({ userRole }: SidebarProps) {
       { href: "/dashboard/companies", label: "Companies", icon: Building2 },
       { href: "/dashboard/users", label: "Users", icon: Users },
       { href: "/dashboard/reports", label: "Reports", icon: FileText },
-      { href: "/dashboard/settings", label: "Settings", icon: Settings },
+      { href: "/dashboard/profile", label: "Profile", icon: User },
     ],
     head_of_department: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/team", label: "My Team", icon: Users },
       { href: "/dashboard/reports", label: "Reports", icon: FileText },
       { href: "/dashboard/calls", label: "All Calls", icon: Phone },
-      { href: "/dashboard/settings", label: "Settings", icon: Settings },
+      { href: "/dashboard/profile", label: "Profile", icon: User },
     ],
     agent: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },

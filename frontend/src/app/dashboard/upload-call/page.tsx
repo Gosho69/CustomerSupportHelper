@@ -1,4 +1,4 @@
-import UploadCall from "@/components/agent/UploadCall";
+import { UploadCall } from "@/components/calls";
 
 export default function UploadCallPage() {
   return <UploadCall />;
