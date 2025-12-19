@@ -253,36 +253,39 @@ export default function DashboardNavbar() {
               : null}
 
             {/* Logout Confirmation Modal */}
-            {showLogoutConfirm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center">
-                <div
-                  className="absolute inset-0 bg-black/50"
-                  onClick={() => setShowLogoutConfirm(false)}
-                />
-                <div className="relative bg-slate-800 rounded-lg p-6 w-96 border border-white/10 z-50">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Confirm Logout
-                  </h3>
-                  <p className="text-sm text-gray-400 mb-4">
-                    Are you sure you want to log out?
-                  </p>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setShowLogoutConfirm(false)}
-                      className="px-4 py-2 rounded bg-slate-700 text-gray-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={confirmLogout}
-                      className="px-4 py-2 rounded bg-red-500 text-white"
-                    >
-                      Logout
-                    </button>
+            {showLogoutConfirm &&
+              portalRootRef.current &&
+              createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+                  <div
+                    className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                    onClick={() => setShowLogoutConfirm(false)}
+                  />
+                  <div className="relative bg-slate-800 rounded-xl p-6 w-full max-w-md border border-white/10 shadow-2xl">
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      Confirm Logout
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-6">
+                      Are you sure you want to log out?
+                    </p>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setShowLogoutConfirm(false)}
+                        className="px-6 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={confirmLogout}
+                        className="px-6 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </div>,
+                portalRootRef.current
+              )}
           </div>
         </div>
       </div>
