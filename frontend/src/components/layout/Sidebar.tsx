@@ -36,7 +36,6 @@ export default function Sidebar({ userRole }: SidebarProps) {
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/companies", label: "Companies", icon: Building2 },
       { href: "/dashboard/users", label: "Users", icon: Users },
-      { href: "/dashboard/reports", label: "Reports", icon: FileText },
       { href: "/dashboard/profile", label: "Profile", icon: User },
     ],
     head_of_department: [
