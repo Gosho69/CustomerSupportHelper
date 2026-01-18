@@ -3,34 +3,19 @@
 import { Bell, Search, User, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useAuthStore } from "@/store/authStore";
+import { useRouter } from "next/navigation";
+import { authApi } from "@/lib/api";
 
 export default function DashboardNavbar() {
-  // Read role after mount to avoid hydration mismatch
-  const [userRole, setUserRole] = useState<
-    "agent" | "head_of_department" | "admin"
-  >("agent");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("demo_role");
-    if (stored === "head_of_department" || stored === "admin") {
-      setUserRole(stored as "head_of_department" | "admin");
-    }
-  }, []);
-
-  // Temporarily hardcoded user for demo purposes
-  const user = {
-    first_name: "Demo",
-    last_name: "User",
-    username: "demo_user",
-    email: "demo@example.com",
-    role: userRole,
-  } as any;
+  const router = useRouter();
+  const { user, clearAuth } = useAuthStore();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const profileButtonRef = useRef<HTMLButtonElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(
-    null
+    null,
   );
   const portalRootRef = useRef<HTMLElement | null>(null);
 
@@ -85,16 +70,11 @@ export default function DashboardNavbar() {
     };
   }, [showProfileMenu]);
 
-  const switchRole = (role: "agent" | "head_of_department" | "admin") => {
-    localStorage.setItem("demo_role", role);
-    setUserRole(role);
-    setShowProfileMenu(false);
-    window.location.reload(); // Reload to update sidebar and other components
-  };
-
   const confirmLogout = () => {
-    localStorage.removeItem("demo_role");
-    window.location.href = "/login";
+    // Clear auth state and redirect to login
+    authApi.logout();
+    clearAuth();
+    router.push("/login");
   };
 
   return (
@@ -195,45 +175,6 @@ export default function DashboardNavbar() {
                       </a>
                     </div>
 
-                    {/* Demo Role Switcher */}
-                    <div className="px-5 py-3 border-t border-white/10">
-                      <p className="text-xs font-medium text-gray-400 mb-3">
-                        Switch demo role
-                      </p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <button
-                          onClick={() => switchRole("agent")}
-                          className={`py-2 px-3 text-xs font-medium rounded-lg transition-all ${
-                            userRole === "agent"
-                              ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg"
-                              : "bg-slate-700/50 text-gray-300 hover:bg-slate-600"
-                          }`}
-                        >
-                          Agent
-                        </button>
-                        <button
-                          onClick={() => switchRole("head_of_department")}
-                          className={`py-2 px-3 text-xs font-medium rounded-lg transition-all ${
-                            userRole === "head_of_department"
-                              ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg"
-                              : "bg-slate-700/50 text-gray-300 hover:bg-slate-600"
-                          }`}
-                        >
-                          Head
-                        </button>
-                        <button
-                          onClick={() => switchRole("admin")}
-                          className={`py-2 px-3 text-xs font-medium rounded-lg transition-all ${
-                            userRole === "admin"
-                              ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg"
-                              : "bg-slate-700/50 text-gray-300 hover:bg-slate-600"
-                          }`}
-                        >
-                          Admin
-                        </button>
-                      </div>
-                    </div>
-
                     {/* Logout Button */}
                     <div className="border-t border-white/10 pt-2 pb-2 px-2">
                       <button
@@ -248,7 +189,7 @@ export default function DashboardNavbar() {
                       </button>
                     </div>
                   </div>,
-                  portalRootRef.current
+                  portalRootRef.current,
                 )
               : null}
 
@@ -284,7 +225,7 @@ export default function DashboardNavbar() {
                     </div>
                   </div>
                 </div>,
-                portalRootRef.current
+                portalRootRef.current,
               )}
           </div>
         </div>

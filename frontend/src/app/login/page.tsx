@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mic, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { authApi } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
+  const { setAuth, isAuthenticated } = useAuthStore();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -17,25 +18,24 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/api/users/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
+      const response = await authApi.login(
+        formData.username,
+        formData.password,
+      );
+      const data = response.data;
 
       // Store in Zustand store (which also sets localStorage)
       setAuth(data.user, data.access, data.refresh);
@@ -43,7 +43,11 @@ export default function LoginPage() {
       // Redirect to dashboard
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Invalid credentials. Please try again.");
+      const errorMessage =
+        err.response?.data?.error ||
+        err.message ||
+        "Invalid credentials. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -220,17 +224,6 @@ export default function LoginPage() {
               </svg>
             </button>
           </div>
-
-          {/* Sign Up Link */}
-          <p className="text-center text-gray-400 mt-8">
-            Don't have an account?{" "}
-            <Link
-              href="/signup"
-              className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
-            >
-              Sign up for free
-            </Link>
-          </p>
         </div>
 
         {/* Footer */}
