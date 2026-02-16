@@ -132,12 +132,11 @@ export default function LoginPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
                 }
-                className="w-full px-4 py-3 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2"
+                className="w-full px-4 py-3 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 style={{
                   background: "#ffffff",
                   border: "1px solid var(--input-border)",
                   color: "var(--text-primary)",
-                  focusRingColor: "var(--accent)",
                 }}
                 placeholder="Enter your username"
                 disabled={isLoading}
