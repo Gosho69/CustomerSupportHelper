@@ -6,7 +6,6 @@ import {
   Phone,
   Building2,
   Calendar,
-  TrendingUp,
   Target,
   Clock,
   Star,
@@ -29,11 +28,12 @@ import {
 } from "recharts";
 import { useAuthStore } from "@/store/authStore";
 import { callsApi, reportsApi } from "@/lib/api";
+import { useToast } from "@/components/ui";
 
 export default function Profile() {
   const { user, setAuth } = useAuthStore();
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [editedProfile, setEditedProfile] = useState({
     first_name: "",
     last_name: "",
@@ -44,7 +44,6 @@ export default function Profile() {
     totalCalls: 0,
     avgScore: 0,
     totalHours: 0,
-    currentStreak: 0,
   });
   const [skillData, setSkillData] = useState<any[]>([]);
   const [monthlyActivity, setMonthlyActivity] = useState<any[]>([]);
@@ -100,7 +99,6 @@ export default function Profile() {
         totalCalls,
         avgScore,
         totalHours,
-        currentStreak: 0, // This would need backend implementation
       });
 
       // Extract skill data from latest report
@@ -203,19 +201,6 @@ export default function Profile() {
     avatar: null,
   };
 
-  const handleProfilePictureChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSaveProfile = async () => {
     if (!user) return;
 
@@ -232,10 +217,10 @@ export default function Profile() {
       );
 
       setIsEditing(false);
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     } catch (error) {
       console.error("Failed to update profile:", error);
-      alert("Failed to update profile");
+      toast.error("Failed to update profile");
     }
   };
 
@@ -267,32 +252,10 @@ export default function Profile() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
           <div className="flex items-center space-x-6 mb-6 md:mb-0">
             <div className="relative">
-              {profilePicture ? (
-                <img
-                  src={profilePicture}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover border-4 border-white/30"
-                />
-              ) : (
-                <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-4xl font-bold border-4 border-white/30">
-                  {profile.firstName[0]}
-                  {profile.lastName[0]}
-                </div>
-              )}
-              {isEditing && (
-                <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-opacity bg-white">
-                  <Edit
-                    className="w-4 h-4"
-                    style={{ color: "var(--accent)" }}
-                  />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleProfilePictureChange}
-                  />
-                </label>
-              )}
+              <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-4xl font-bold border-4 border-white/30">
+                {profile.firstName[0]}
+                {profile.lastName[0]}
+              </div>
             </div>
             <div>
               {isEditing ? (
@@ -468,7 +431,7 @@ export default function Profile() {
       {/* Performance Stats - Hidden for Admins */}
       {!isAdmin && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             <div className="rounded-lg p-6" style={cardStyle}>
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
@@ -529,30 +492,6 @@ export default function Profile() {
                 style={{ color: "var(--text-primary)" }}
               >
                 {stats.totalHours}h
-              </p>
-            </div>
-
-            <div className="rounded-lg p-6" style={cardStyle}>
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
-                style={{ background: "var(--accent-bg)" }}
-              >
-                <TrendingUp
-                  className="w-5 h-5"
-                  style={{ color: "var(--accent)" }}
-                />
-              </div>
-              <p
-                className="text-sm mb-1"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Current Streak
-              </p>
-              <p
-                className="text-3xl font-bold"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {stats.currentStreak}
               </p>
             </div>
           </div>

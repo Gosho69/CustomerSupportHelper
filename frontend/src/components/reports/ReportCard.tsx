@@ -1,10 +1,4 @@
-import {
-  Calendar,
-  TrendingUp,
-  TrendingDown,
-  Eye,
-  Download,
-} from "lucide-react";
+import { Calendar, TrendingUp, TrendingDown, Eye } from "lucide-react";
 import { Badge } from "@/components/ui";
 
 interface Report {
@@ -23,14 +17,9 @@ interface Report {
 interface ReportCardProps {
   report: Report;
   onView: () => void;
-  onDownload: () => void;
 }
 
-export default function ReportCard({
-  report,
-  onView,
-  onDownload,
-}: ReportCardProps) {
+export default function ReportCard({ report, onView }: ReportCardProps) {
   const getScoreColor = (score: number) => {
     return "";
   };
@@ -171,16 +160,6 @@ export default function ReportCard({
               style={{ background: "var(--accent-bg)" }}
             >
               <Eye
-                className="w-5 h-5"
-                style={{ color: "var(--text-secondary)" }}
-              />
-            </button>
-            <button
-              onClick={onDownload}
-              className="p-2 rounded-lg transition-colors"
-              style={{ background: "var(--accent-bg)" }}
-            >
-              <Download
                 className="w-5 h-5"
                 style={{ color: "var(--text-secondary)" }}
               />

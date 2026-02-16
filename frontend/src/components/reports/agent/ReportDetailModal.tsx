@@ -6,7 +6,6 @@ import {
   Calendar,
   Award,
   Target,
-  Download,
 } from "lucide-react";
 import {
   BarChart,
@@ -304,13 +303,6 @@ export default function ReportDetailModal({
 
         {/* Actions */}
         <div className="flex gap-4">
-          <button
-            className="flex-1 px-6 py-3 text-white rounded-lg font-semibold transition-all flex items-center justify-center space-x-2"
-            style={{ background: "var(--accent)" }}
-          >
-            <Download className="w-5 h-5" />
-            <span>Download PDF</span>
-          </button>
           <button
             onClick={onClose}
             className="flex-1 px-6 py-3 rounded-lg font-semibold transition-all"

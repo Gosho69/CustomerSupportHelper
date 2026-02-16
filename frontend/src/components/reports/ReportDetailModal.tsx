@@ -5,10 +5,8 @@ import {
   Award,
   TrendingUp,
   TrendingDown,
-  Download,
-  User,
 } from "lucide-react";
-import { Modal, Button, Badge, StatusIndicator } from "@/components/ui";
+import { Modal, Badge, StatusIndicator } from "@/components/ui";
 import { CategoryBarChart } from "@/components/charts";
 
 interface Report {
@@ -279,21 +277,6 @@ export default function ReportDetailModal({
             ))}
           </ul>
         </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-4">
-        <Button icon={Download} iconPosition="left" className="flex-1">
-          Download PDF
-        </Button>
-        <Button
-          variant="secondary"
-          icon={User}
-          iconPosition="left"
-          className="flex-1"
-        >
-          View Agent Profile
-        </Button>
       </div>
     </Modal>
   );

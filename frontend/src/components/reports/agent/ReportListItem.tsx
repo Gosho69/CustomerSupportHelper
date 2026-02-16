@@ -4,7 +4,6 @@ import {
   Calendar,
   Award,
   Target,
-  Download,
   Eye,
 } from "lucide-react";
 
@@ -244,16 +243,6 @@ export default function ReportListItem({
         >
           <Eye className="w-4 h-4" />
           <span>View Details</span>
-        </button>
-        <button
-          className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
-          style={{
-            background: "var(--accent-bg)",
-            color: "var(--text-primary)",
-          }}
-        >
-          <Download className="w-4 h-4" />
-          <span>Download PDF</span>
         </button>
       </div>
     </div>

@@ -145,6 +145,9 @@ export const usersApi = {
     password: string;
     first_name?: string;
     last_name?: string;
+    phone?: string;
+    company?: number | null;
+    reporting_to?: number | null;
   }) => api.post("/users/create-agent/", data),
 
   createHead: (data: {
@@ -153,6 +156,9 @@ export const usersApi = {
     password: string;
     first_name?: string;
     last_name?: string;
+    phone?: string;
+    company?: number | null;
+    reporting_to?: number | null;
   }) => api.post("/users/create-head/", data),
 
   getUserDetail: (id: number) => api.get(`/users/${id}/`),

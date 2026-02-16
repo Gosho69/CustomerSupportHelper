@@ -16,8 +16,10 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
+    password: "",
     first_name: "",
     last_name: "",
+    phone: "",
     role: "agent",
     company: "",
     reporting_to: "",
@@ -36,8 +38,10 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
       setFormData({
         username: user.username || "",
         email: user.email || "",
+        password: "", // Don't populate password for edit
         first_name: user.first_name || "",
         last_name: user.last_name || "",
+        phone: user.phone || "",
         role: user.role || "agent",
         company: user.company || "",
         reporting_to: user.reporting_to || "",
@@ -118,11 +122,10 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
                 className="block text-sm font-medium mb-2"
                 style={{ color: "var(--text-secondary)" }}
               >
-                First Name *
+                First Name
               </label>
               <input
                 type="text"
-                required
                 value={formData.first_name}
                 onChange={(e) =>
                   setFormData({ ...formData, first_name: e.target.value })
@@ -142,11 +145,10 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
                 className="block text-sm font-medium mb-2"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Last Name *
+                Last Name
               </label>
               <input
                 type="text"
-                required
                 value={formData.last_name}
                 onChange={(e) =>
                   setFormData({ ...formData, last_name: e.target.value })
@@ -210,6 +212,56 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
             />
           </div>
 
+          {!user && (
+            <div>
+              <label
+                className="block text-sm font-medium mb-2"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Password *
+              </label>
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                }}
+                placeholder="Minimum 8 characters"
+                minLength={8}
+              />
+            </div>
+          )}
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Phone
+            </label>
+            <input
+              type="tel"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+              className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+              placeholder="+1 (555) 123-4567"
+            />
+          </div>
+
           <div
             className={`grid ${formData.role === "admin" ? "grid-cols-1" : "grid-cols-2"} gap-4`}
           >
@@ -249,7 +301,7 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
             />
           )}
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3 py-2">
             <input
               type="checkbox"
               id="is_active"
@@ -257,15 +309,11 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
               onChange={(e) =>
                 setFormData({ ...formData, is_active: e.target.checked })
               }
-              className="w-5 h-5 rounded text-indigo-600 focus:ring-2 focus:ring-indigo-500"
-              style={{
-                background: "#ffffff",
-                border: "1px solid var(--border)",
-              }}
+              className="styled-checkbox"
             />
             <label
               htmlFor="is_active"
-              className="text-sm"
+              className="text-sm font-medium cursor-pointer select-none"
               style={{ color: "var(--text-secondary)" }}
             >
               Active User

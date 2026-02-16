@@ -10,15 +10,24 @@ import {
 } from "@/components/admin/users";
 import { usersApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { useToast, ConfirmDialog } from "@/components/ui";
 
 export default function UsersPage() {
   const { user: currentUser } = useAuthStore();
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    open: boolean;
+    userId: number | null;
+  }>({
+    open: false,
+    userId: null,
+  });
 
   // Fetch users from backend
   const fetchUsers = useCallback(async () => {
@@ -67,19 +76,23 @@ export default function UsersPage() {
   const handleDeleteUser = async (id: number) => {
     // Prevent self-deletion
     if (currentUser && id === currentUser.id) {
-      alert("You cannot delete your own account!");
+      toast.warning("You cannot delete your own account!");
       return;
     }
+    setConfirmDelete({ open: true, userId: id });
+  };
 
-    if (confirm("Are you sure you want to delete this user?")) {
-      try {
-        await usersApi.deleteUser(id);
-        // Refresh the list after deletion
-        await fetchUsers();
-      } catch (error) {
-        console.error("Failed to delete user:", error);
-        alert("Failed to delete user");
-      }
+  const executeDeleteUser = async () => {
+    const id = confirmDelete.userId;
+    setConfirmDelete({ open: false, userId: null });
+    if (!id) return;
+    try {
+      await usersApi.deleteUser(id);
+      toast.success("User deleted successfully");
+      await fetchUsers();
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      toast.error("Failed to delete user");
     }
   };
 
@@ -108,11 +121,16 @@ export default function UsersPage() {
         }
       }
       setShowModal(false);
+      toast.success(
+        selectedUser
+          ? "User updated successfully"
+          : "User created successfully",
+      );
       // Refresh the list after save
       await fetchUsers();
     } catch (error) {
       console.error("Failed to save user:", error);
-      alert("Failed to save user");
+      toast.error("Failed to save user");
     }
   };
 
@@ -165,6 +183,16 @@ export default function UsersPage() {
           onSave={handleSaveUser}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        title="Delete User"
+        message="This action cannot be undone. The user will be permanently removed from the system."
+        confirmLabel="Delete User"
+        variant="danger"
+        onConfirm={executeDeleteUser}
+        onCancel={() => setConfirmDelete({ open: false, userId: null })}
+      />
     </div>
   );
 }

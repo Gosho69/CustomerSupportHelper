@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Phone, Search, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Phone } from "lucide-react";
 import { PageHeader, SearchInput, StatsCard, Badge } from "@/components/ui";
 import CallDetailModal from "@/components/CallDetailModal";
+import { callsApi } from "@/lib/api";
 
 interface Call {
   id: number;
@@ -17,46 +18,45 @@ interface Call {
 
 export default function AllCalls() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterSentiment, setFilterSentiment] = useState<string>("all");
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [calls] = useState<Call[]>([
-    {
-      id: 1,
-      agentName: "John Smith",
-      callDate: "Dec 17, 2024 10:30 AM",
-      duration: 456,
-      sentiment: "positive",
-      status: "analyzed",
-      score: 92,
-    },
-    {
-      id: 2,
-      agentName: "Sarah Johnson",
-      callDate: "Dec 17, 2024 09:15 AM",
-      duration: 723,
-      sentiment: "neutral",
-      status: "analyzed",
-      score: 85,
-    },
-    {
-      id: 3,
-      agentName: "Mike Wilson",
-      callDate: "Dec 16, 2024 04:20 PM",
-      duration: 312,
-      sentiment: "negative",
-      status: "analyzed",
-      score: 68,
-    },
-  ]);
+  useEffect(() => {
+    const fetchCalls = async () => {
+      try {
+        setLoading(true);
+        const response = await callsApi.getMyCalls();
+        const data = response.data || [];
+
+        const mapped: Call[] = data.map((call: any) => ({
+          id: call.id,
+          agentName: call.agent_name || call.agent?.username || "Unknown",
+          callDate: call.uploaded_at
+            ? new Date(call.uploaded_at).toLocaleString()
+            : "",
+          duration: call.duration || 0,
+          sentiment: call.sentiment || "neutral",
+          status: call.status || "analyzed",
+          score: call.score,
+        }));
+
+        setCalls(mapped);
+      } catch (error) {
+        console.error("Failed to fetch calls:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCalls();
+  }, []);
 
   const filteredCalls = calls.filter((call) => {
     const matchesSearch = call.agentName
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesSentiment =
-      filterSentiment === "all" || call.sentiment === filterSentiment;
-    return matchesSearch && matchesSentiment;
+    return matchesSearch;
   });
 
   const formatDuration = (seconds: number) => {
@@ -64,6 +64,14 @@ export default function AllCalls() {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div style={{ color: "var(--text-secondary)" }}>Loading calls...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -104,54 +112,6 @@ export default function AllCalls() {
           placeholder="Search calls..."
           className="flex-1 w-full md:max-w-md"
         />
-
-        <div className="flex gap-3">
-          <div className="relative">
-            <select
-              value={filterSentiment}
-              onChange={(e) => setFilterSentiment(e.target.value)}
-              className="px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer pr-10"
-              style={{
-                background: "#ffffff",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
-              }}
-            >
-              <option value="all">All Sentiments</option>
-              <option value="positive">Positive</option>
-              <option value="neutral">Neutral</option>
-              <option value="negative">Negative</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg
-                className="w-5 h-5"
-                style={{ color: "var(--text-secondary)" }}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
-          </div>
-
-          <button
-            className="px-6 py-3 hover:bg-gray-50 rounded-lg font-semibold transition-all flex items-center space-x-2"
-            style={{
-              background: "#ffffff",
-              border: "1px solid var(--border)",
-              color: "var(--text-primary)",
-            }}
-          >
-            <Download className="w-5 h-5" />
-            <span>Export</span>
-          </button>
-        </div>
       </div>
 
       <div

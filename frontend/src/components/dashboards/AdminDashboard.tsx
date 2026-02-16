@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, Activity, Phone } from "lucide-react";
+import { Building2, Users, Phone } from "lucide-react";
 import Link from "next/link";
 import { PageHeader, StatsCard } from "@/components/ui";
 import { usersApi, companiesApi, callsApi } from "@/lib/api";
@@ -153,64 +153,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         </Link>
-      </div>
-
-      {/* System Activity */}
-      <div className="rounded-lg p-6" style={cardStyle}>
-        <h2
-          className="text-lg font-semibold mb-6 flex items-center"
-          style={{ color: "var(--text-primary)" }}
-        >
-          <Activity
-            className="w-5 h-5 mr-2"
-            style={{ color: "var(--success)" }}
-          />
-          Recent System Activity
-        </h2>
-        <div className="space-y-3">
-          {[
-            {
-              type: "user",
-              message: "New agent added to Tech Solutions Inc",
-              time: "10 minutes ago",
-            },
-            {
-              type: "company",
-              message: "Global Retail Corp updated company settings",
-              time: "1 hour ago",
-            },
-            {
-              type: "call",
-              message: "348 calls processed today",
-              time: "2 hours ago",
-            },
-          ].map((activity, index) => (
-            <div
-              key={index}
-              className="flex items-start space-x-3 p-4 rounded-lg transition-colors"
-              style={{ background: "var(--background)" }}
-            >
-              <div
-                className="w-2 h-2 rounded-full mt-2"
-                style={{ background: "var(--success)" }}
-              ></div>
-              <div className="flex-1">
-                <p
-                  className="text-sm mb-1"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {activity.message}
-                </p>
-                <p
-                  className="text-xs"
-                  style={{ color: "var(--text-tertiary)" }}
-                >
-                  {activity.time}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

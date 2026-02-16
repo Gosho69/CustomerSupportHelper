@@ -6,3 +6,6 @@ export { default as Button } from "./Button";
 export { default as PageHeader } from "./PageHeader";
 export { default as StatusIndicator } from "./StatusIndicator";
 export { default as CustomSelect } from "./CustomSelect";
+export { default as InlineSelect } from "./InlineSelect";
+export { default as ConfirmDialog } from "./ConfirmDialog";
+export { ToastProvider, useToast } from "./Toast";

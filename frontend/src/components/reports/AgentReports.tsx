@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import PerformanceHeader from "./agent/PerformanceHeader";
-import PerformanceCharts from "./agent/PerformanceCharts";
 import ReportFilters from "./agent/ReportFilters";
 import ReportListItem, { Report } from "./agent/ReportListItem";
 import ReportDetailModal from "./agent/ReportDetailModal";
@@ -33,23 +32,6 @@ export default function AgentReports() {
     fetchReports();
   }, []);
 
-  const performanceData = [
-    { month: "Jul", score: 75, calls: 78 },
-    { month: "Aug", score: 78, calls: 82 },
-    { month: "Sep", score: 80, calls: 85 },
-    { month: "Oct", score: 82, calls: 89 },
-    { month: "Nov", score: 82, calls: 89 },
-    { month: "Dec", score: 87, calls: 67 },
-  ];
-
-  const categoryScores = [
-    { category: "Empathy", score: 92 },
-    { category: "Communication", score: 88 },
-    { category: "Problem Solving", score: 85 },
-    { category: "Product Knowledge", score: 79 },
-    { category: "Time Management", score: 83 },
-  ];
-
   const filteredReports = reports.filter((report) => {
     if (filter !== "all" && report.type !== filter) return false;
     if (
@@ -62,9 +44,21 @@ export default function AgentReports() {
   });
 
   const avgScore =
-    reports.reduce((acc, r) => acc + r.score, 0) / reports.length;
-  const latestScore = reports[0].score;
-  const scoreTrend = latestScore - reports[1].score;
+    reports.length > 0
+      ? Math.round(
+          reports.reduce((acc, r) => acc + r.score, 0) / reports.length,
+        )
+      : 0;
+  const latestScore = reports.length > 0 ? reports[0].score : 0;
+  const scoreTrend = reports.length > 1 ? latestScore - reports[1].score : 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div style={{ color: "var(--text-secondary)" }}>Loading reports...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -73,11 +67,6 @@ export default function AgentReports() {
         avgScore={avgScore}
         totalReports={reports.length}
         scoreTrend={scoreTrend}
-      />
-
-      <PerformanceCharts
-        performanceData={performanceData}
-        categoryScores={categoryScores}
       />
 
       <ReportFilters

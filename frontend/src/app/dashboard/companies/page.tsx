@@ -9,13 +9,22 @@ import {
   CompanyModal,
 } from "@/components/admin/companies";
 import { companiesApi } from "@/lib/api";
+import { useToast, ConfirmDialog } from "@/components/ui";
 
 export default function CompaniesPage() {
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    open: boolean;
+    companyId: number | null;
+  }>({
+    open: false,
+    companyId: null,
+  });
 
   // Fetch companies from backend
   const fetchCompanies = useCallback(async () => {
@@ -53,15 +62,20 @@ export default function CompaniesPage() {
   };
 
   const handleDeleteCompany = async (id: number) => {
-    if (confirm("Are you sure you want to delete this company?")) {
-      try {
-        await companiesApi.deleteCompany(id);
-        // Refresh the list after deletion
-        await fetchCompanies();
-      } catch (error) {
-        console.error("Failed to delete company:", error);
-        alert("Failed to delete company");
-      }
+    setConfirmDelete({ open: true, companyId: id });
+  };
+
+  const executeDeleteCompany = async () => {
+    const id = confirmDelete.companyId;
+    setConfirmDelete({ open: false, companyId: null });
+    if (!id) return;
+    try {
+      await companiesApi.deleteCompany(id);
+      toast.success("Company deleted successfully");
+      await fetchCompanies();
+    } catch (error) {
+      console.error("Failed to delete company:", error);
+      toast.error("Failed to delete company");
     }
   };
 
@@ -75,11 +89,16 @@ export default function CompaniesPage() {
         await companiesApi.createCompany(companyData);
       }
       setShowModal(false);
+      toast.success(
+        selectedCompany
+          ? "Company updated successfully"
+          : "Company created successfully",
+      );
       // Refresh the list after save
       await fetchCompanies();
     } catch (error) {
       console.error("Failed to save company:", error);
-      alert("Failed to save company");
+      toast.error("Failed to save company");
     }
   };
 
@@ -123,6 +142,16 @@ export default function CompaniesPage() {
           onSave={handleSaveCompany}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        title="Delete Company"
+        message="This action cannot be undone. The company and all associated data will be permanently removed."
+        confirmLabel="Delete Company"
+        variant="danger"
+        onConfirm={executeDeleteCompany}
+        onCancel={() => setConfirmDelete({ open: false, companyId: null })}
+      />
     </div>
   );
 }

@@ -12,6 +12,8 @@ import {
   Clock,
   FileAudio,
 } from "lucide-react";
+import { useToast } from "@/components/ui";
+import { callsApi } from "@/lib/api";
 
 interface UploadedFile {
   file: File;
@@ -21,6 +23,7 @@ interface UploadedFile {
 }
 
 export default function UploadCall() {
+  const toast = useToast();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -32,14 +35,25 @@ export default function UploadCall() {
     uploadedFiles.length > 0 &&
     uploadedFiles.every((f) => f.status === "success" || f.status === "error");
 
-  const handleStartAnalysis = () => {
+  const handleStartAnalysis = async () => {
     setIsAnalyzing(true);
-    // Simulate analysis - in production, this would be an API call
-    setTimeout(() => {
-      alert("Analysis started! You will be notified when complete.");
+    try {
+      const successfulFiles = uploadedFiles.filter(
+        (f) => f.status === "success",
+      );
+      for (const uploadedFile of successfulFiles) {
+        const formData = new FormData();
+        formData.append("audio", uploadedFile.file);
+        await callsApi.uploadCall(formData);
+      }
+      toast.success("Files uploaded! Analysis will begin shortly.");
       setUploadedFiles([]);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error("Failed to upload files for analysis.");
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -93,43 +107,30 @@ export default function UploadCall() {
       setUploadedFiles((prev) => [...prev, newFile]);
 
       if (!error) {
-        // Simulate upload
-        simulateUpload(file);
+        // Mark as uploading and simulate progress (file is held for batch upload on analysis)
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.file === file ? { ...f, status: "uploading" } : f,
+          ),
+        );
+
+        // Simulate quick local validation progress
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress = Math.min(progress + 20, 100);
+          setUploadedFiles((prev) =>
+            prev.map((f) => {
+              if (f.file === file && f.status === "uploading") {
+                const newStatus = progress === 100 ? "success" : "uploading";
+                if (progress === 100) clearInterval(interval);
+                return { ...f, progress, status: newStatus };
+              }
+              return f;
+            }),
+          );
+        }, 200);
       }
     });
-  };
-
-  const simulateUpload = (file: File) => {
-    setUploadedFiles((prev) =>
-      prev.map((f) => {
-        if (f.file === file) {
-          return { ...f, status: "uploading" };
-        }
-        return f;
-      }),
-    );
-
-    const interval = setInterval(() => {
-      setUploadedFiles((prev) =>
-        prev.map((f) => {
-          if (f.file === file && f.status === "uploading") {
-            const newProgress = Math.min(f.progress + 10, 100);
-            const newStatus = newProgress === 100 ? "success" : "uploading";
-
-            if (newProgress === 100) {
-              clearInterval(interval);
-            }
-
-            return {
-              ...f,
-              progress: newProgress,
-              status: newStatus,
-            };
-          }
-          return f;
-        }),
-      );
-    }, 300);
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -401,10 +402,9 @@ export default function UploadCall() {
                     <div
                       className="h-full transition-all duration-300"
                       style={{
-                        background:
-                          "linear-gradient(90deg, rgba(237,231,216,1) 0%, rgba(216,205,191,1) 100%)",
+                        width: `${uploadedFile.progress}%`,
+                        background: "var(--accent)",
                       }}
-                      style={{ width: `${uploadedFile.progress}%` }}
                     />
                   </div>
                 )}
