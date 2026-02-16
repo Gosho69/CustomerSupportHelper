@@ -18,14 +18,14 @@ interface SkillsRadarChartProps {
 export default function SkillsRadarChart({
   data,
   height = 300,
-  color = "#a855f7",
+  color = "#635bff",
 }: SkillsRadarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RadarChart data={data}>
-        <PolarGrid stroke="#ffffff20" />
-        <PolarAngleAxis dataKey="skill" stroke="#9ca3af" />
-        <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#9ca3af" />
+        <PolarGrid stroke="#e3e8ee" />
+        <PolarAngleAxis dataKey="skill" stroke="#697386" />
+        <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#e3e8ee" />
         <Radar
           name="Skills"
           dataKey="value"

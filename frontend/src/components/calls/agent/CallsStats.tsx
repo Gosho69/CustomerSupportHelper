@@ -16,19 +16,19 @@ export default function CallsStats({
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <StatsCard
         icon={Phone}
-        iconColor="bg-blue-500/20 text-blue-400"
+        iconColor="bg-blue-50 text-blue-600"
         label="Total Calls"
         value={total}
       />
       <StatsCard
         icon={Clock}
-        iconColor="bg-cyan-500/20 text-cyan-400"
+        iconColor="bg-cyan-50 text-cyan-600"
         label="Avg Duration"
         value={avgDuration}
       />
       <StatsCard
         icon={TrendingUp}
-        iconColor="bg-purple-500/20 text-purple-400"
+        iconColor="bg-purple-50 text-purple-600"
         label="Today"
         value={today}
       />

@@ -297,31 +297,33 @@ export default function CallDetailModal({
   const getEmotionIcon = (emotion: string) => {
     switch (emotion.toLowerCase()) {
       case "happy":
-        return <Smile className="w-5 h-5 text-green-400" />;
+        return <Smile className="w-5 h-5" style={{ color: "#0caf60" }} />;
       case "sad":
-        return <Frown className="w-5 h-5 text-blue-400" />;
+        return <Frown className="w-5 h-5" style={{ color: "var(--accent)" }} />;
       case "frustrated":
-        return <AlertCircle className="w-5 h-5 text-orange-400" />;
+        return <AlertCircle className="w-5 h-5" style={{ color: "#e68a00" }} />;
       default:
-        return <Meh className="w-5 h-5 text-gray-400" />;
+        return (
+          <Meh className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
+        );
     }
   };
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment.toLowerCase()) {
       case "positive":
-        return "text-green-400";
+        return "text-green-600";
       case "negative":
-        return "text-red-400";
+        return "text-red-600";
       default:
-        return "text-gray-400";
+        return "text-gray-500";
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-400";
-    if (score >= 60) return "text-yellow-400";
-    return "text-red-400";
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const EMOTION_COLORS = {
@@ -341,7 +343,7 @@ export default function CallDetailModal({
           ([name, value]) => ({
             name: name.charAt(0).toUpperCase() + name.slice(1),
             value,
-          })
+          }),
         )
       : [];
 
@@ -381,48 +383,84 @@ export default function CallDetailModal({
       <div className="space-y-6">
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+          <div
+            className="rounded-lg p-4"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Overall Score</p>
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Overall Score
+                </p>
                 <p
                   className={`text-3xl font-bold mt-1 ${getScoreColor(
-                    call.behavioral_analysis?.behavioral_score || 0
+                    call.behavioral_analysis?.behavioral_score || 0,
                   )}`}
                 >
                   {call.behavioral_analysis?.behavioral_score || 0}
                   <span className="text-lg">/100</span>
                 </p>
               </div>
-              <Award className="w-10 h-10 text-yellow-400" />
+              <Award className="w-10 h-10" style={{ color: "#e68a00" }} />
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+          <div
+            className="rounded-lg p-4"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Sentiment</p>
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Sentiment
+                </p>
                 <p
                   className={`text-xl font-bold mt-1 capitalize ${getSentimentColor(
-                    call.emotional_summary?.overall_sentiment || "neutral"
+                    call.emotional_summary?.overall_sentiment || "neutral",
                   )}`}
                 >
                   {call.emotional_summary?.overall_sentiment || "Neutral"}
                 </p>
               </div>
-              <Heart className="w-10 h-10 text-pink-400" />
+              <Heart className="w-10 h-10" style={{ color: "#ec4899" }} />
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
+          <div
+            className="rounded-lg p-4"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-400">Duration</p>
-                <p className="text-3xl font-bold text-white mt-1">
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Duration
+                </p>
+                <p
+                  className="text-3xl font-bold mt-1"
+                  style={{ color: "var(--text-primary)" }}
+                >
                   {formatDuration(call.duration)}
                 </p>
               </div>
-              <Clock className="w-10 h-10 text-blue-400" />
+              <Clock className="w-10 h-10" style={{ color: "var(--accent)" }} />
             </div>
           </div>
         </div>
@@ -430,9 +468,18 @@ export default function CallDetailModal({
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Emotion Distribution Pie Chart */}
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Smile className="w-5 h-5 mr-2 text-yellow-400" />
+          <div
+            className="rounded-lg p-6"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <Smile className="w-5 h-5 mr-2" style={{ color: "#e68a00" }} />
               Emotion Distribution
             </h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -462,10 +509,10 @@ export default function CallDetailModal({
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "rgba(15, 23, 42, 0.9)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid var(--border)",
                     borderRadius: "0.5rem",
-                    color: "#fff",
+                    color: "var(--text-primary)",
                   }}
                 />
               </PieChart>
@@ -473,22 +520,34 @@ export default function CallDetailModal({
           </div>
 
           {/* Behavioral Radar Chart */}
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Activity className="w-5 h-5 mr-2 text-cyan-400" />
+          <div
+            className="rounded-lg p-6"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <Activity
+                className="w-5 h-5 mr-2"
+                style={{ color: "var(--accent)" }}
+              />
               Performance Radar
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart data={behaviorRadarData}>
-                <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
+                <PolarGrid stroke="#e3e8ee" />
                 <PolarAngleAxis
                   dataKey="metric"
-                  tick={{ fill: "#9ca3af", fontSize: 12 }}
+                  tick={{ fill: "#697386", fontSize: 12 }}
                 />
                 <PolarRadiusAxis
                   angle={90}
                   domain={[0, 100]}
-                  tick={{ fill: "#9ca3af" }}
+                  tick={{ fill: "#697386" }}
                 />
                 <Radar
                   name="Performance"
@@ -499,10 +558,10 @@ export default function CallDetailModal({
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "rgba(15, 23, 42, 0.9)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid var(--border)",
                     borderRadius: "0.5rem",
-                    color: "#fff",
+                    color: "var(--text-primary)",
                   }}
                 />
               </RadarChart>
@@ -511,29 +570,52 @@ export default function CallDetailModal({
         </div>
 
         {/* Summary Section */}
-        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <MessageSquare className="w-5 h-5 mr-2 text-blue-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-4 flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <MessageSquare
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--accent)" }}
+            />
             Call Summary
           </h3>
-          <p className="text-gray-300 leading-relaxed">
+          <p
+            className="leading-relaxed"
+            style={{ color: "var(--text-secondary)" }}
+          >
             {call.transcript_summary?.summary ||
               "No summary available for this call."}
           </p>
           {call.transcript_summary?.key_points &&
             call.transcript_summary.key_points.length > 0 && (
               <div className="mt-4">
-                <p className="text-sm font-medium text-gray-400 mb-2">
+                <p
+                  className="text-sm font-medium mb-2"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   Key Points:
                 </p>
                 <ul className="space-y-2">
                   {call.transcript_summary.key_points.map(
                     (point: string, index: number) => (
                       <li key={index} className="flex items-start">
-                        <CheckCircle className="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-300">{point}</span>
+                        <CheckCircle
+                          className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"
+                          style={{ color: "#0caf60" }}
+                        />
+                        <span style={{ color: "var(--text-secondary)" }}>
+                          {point}
+                        </span>
                       </li>
-                    )
+                    ),
                   )}
                 </ul>
               </div>
@@ -547,18 +629,35 @@ export default function CallDetailModal({
     if (!call) return null;
 
     return (
-      <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-          <MessageSquare className="w-5 h-5 mr-2 text-blue-400" />
+      <div
+        className="rounded-lg p-6"
+        style={{
+          background: "var(--background)",
+          border: "1px solid var(--border)",
+        }}
+      >
+        <h3
+          className="text-lg font-semibold mb-4 flex items-center"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <MessageSquare
+            className="w-5 h-5 mr-2"
+            style={{ color: "var(--accent)" }}
+          />
           Full Transcript
         </h3>
         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
           {call.transcript?.text ? (
-            <div className="whitespace-pre-wrap text-gray-300 leading-relaxed">
+            <div
+              className="whitespace-pre-wrap leading-relaxed"
+              style={{ color: "var(--text-secondary)" }}
+            >
               {call.transcript.text}
             </div>
           ) : (
-            <p className="text-gray-400">No transcript available</p>
+            <p style={{ color: "var(--text-secondary)" }}>
+              No transcript available
+            </p>
           )}
         </div>
       </div>
@@ -578,9 +677,21 @@ export default function CallDetailModal({
     return (
       <div className="space-y-6">
         {/* Emotion Timeline */}
-        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-purple-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-4 flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <TrendingUp
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--accent)" }}
+            />
             Emotional Journey
           </h3>
           <div className="space-y-4">
@@ -588,56 +699,87 @@ export default function CallDetailModal({
               (moment: string, index: number) => (
                 <div
                   key={index}
-                  className="flex items-start space-x-3 p-3 bg-slate-800/50 rounded-lg"
+                  className="flex items-start space-x-3 p-3 rounded-lg"
+                  style={{ background: "var(--accent-bg)" }}
                 >
-                  <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-purple-400 text-sm font-medium">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: "var(--accent-bg)" }}
+                  >
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: "var(--accent)" }}
+                    >
                       {index + 1}
                     </span>
                   </div>
-                  <p className="text-gray-300 flex-1">{moment}</p>
+                  <p
+                    className="flex-1"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {moment}
+                  </p>
                 </div>
-              )
+              ),
             )}
           </div>
         </div>
 
         {/* Detailed Turn Analysis */}
-        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <Activity className="w-5 h-5 mr-2 text-cyan-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-4 flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <Activity
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--accent)" }}
+            />
             Turn-by-Turn Emotions
           </h3>
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
             {call.emotional_analysis?.turns?.map((turn: any, index: number) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
+                className="flex items-center justify-between p-3 rounded-lg"
+                style={{ background: "var(--accent-bg)" }}
               >
                 <div className="flex items-center space-x-3">
                   <div
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
                       turn.speaker === "agent"
-                        ? "bg-blue-500/20 text-blue-400"
-                        : "bg-green-500/20 text-green-400"
+                        ? "bg-blue-50 text-blue-600"
+                        : "bg-green-50 text-green-600"
                     }`}
                   >
                     {turn.speaker.toUpperCase()}
                   </div>
                   {getEmotionIcon(turn.emotion)}
-                  <span className="text-gray-300 capitalize">
+                  <span
+                    className="capitalize"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
                     {turn.emotion}
                   </span>
                 </div>
                 <div className="flex items-center space-x-4">
                   <span
                     className={`text-sm font-medium ${getSentimentColor(
-                      turn.sentiment
+                      turn.sentiment,
                     )}`}
                   >
                     {turn.sentiment}
                   </span>
-                  <span className="text-sm text-gray-400">
+                  <span
+                    className="text-sm"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
                     {(turn.confidence * 100).toFixed(0)}% confidence
                   </span>
                 </div>
@@ -668,25 +810,34 @@ export default function CallDetailModal({
     return (
       <div className="space-y-6">
         {/* Words Per Minute Chart */}
-        <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2 text-blue-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-4 flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <BarChart3
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--accent)" }}
+            />
             Speaking Pace (Words Per Minute)
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={wpmData}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.1)"
-              />
-              <XAxis dataKey="name" tick={{ fill: "#9ca3af" }} />
-              <YAxis tick={{ fill: "#9ca3af" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e3e8ee" />
+              <XAxis dataKey="name" tick={{ fill: "#697386" }} />
+              <YAxis tick={{ fill: "#697386" }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "rgba(15, 23, 42, 0.9)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "#ffffff",
+                  border: "1px solid var(--border)",
                   borderRadius: "0.5rem",
-                  color: "#fff",
+                  color: "var(--text-primary)",
                 }}
               />
               <Legend />
@@ -698,57 +849,101 @@ export default function CallDetailModal({
 
         {/* Behavioral Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-400 mb-3">
+          <div
+            className="rounded-lg p-4"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h4
+              className="text-sm font-medium mb-3"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Response Time
             </h4>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold text-white">
+                <p
+                  className="text-3xl font-bold"
+                  style={{ color: "var(--text-primary)" }}
+                >
                   {call.behavioral_analysis?.response_time_analysis?.agent_avg_response_time?.toFixed(
-                    1
+                    1,
                   ) || 0}
-                  <span className="text-sm text-gray-400">s</span>
+                  <span
+                    className="text-sm"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    s
+                  </span>
                 </p>
-                <p className="text-sm text-green-400 mt-1">
+                <p className="text-sm mt-1" style={{ color: "#0caf60" }}>
                   {call.behavioral_analysis?.response_time_analysis
                     ?.agent_assessment || "Good"}
                 </p>
               </div>
-              <Clock className="w-8 h-8 text-cyan-400" />
+              <Clock className="w-8 h-8" style={{ color: "var(--accent)" }} />
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-400 mb-3">
+          <div
+            className="rounded-lg p-4"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h4
+              className="text-sm font-medium mb-3"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Interruptions
             </h4>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold text-white">
+                <p
+                  className="text-3xl font-bold"
+                  style={{ color: "var(--text-primary)" }}
+                >
                   {call.behavioral_analysis?.interruption_analysis
                     ?.total_interruptions || 0}
                 </p>
-                <p className="text-sm text-green-400 mt-1">
+                <p className="text-sm mt-1" style={{ color: "#0caf60" }}>
                   {call.behavioral_analysis?.interruption_analysis
                     ?.assessment || "Excellent"}
                 </p>
               </div>
-              <AlertCircle className="w-8 h-8 text-orange-400" />
+              <AlertCircle className="w-8 h-8" style={{ color: "#e68a00" }} />
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-400 mb-3">
+          <div
+            className="rounded-lg p-4"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h4
+              className="text-sm font-medium mb-3"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Questions Asked
             </h4>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold text-white">
+                <p
+                  className="text-3xl font-bold"
+                  style={{ color: "var(--text-primary)" }}
+                >
                   {call.behavioral_analysis?.question_analysis
                     ?.agent_questions || 0}
                 </p>
-                <p className="text-sm text-gray-400 mt-1">
+                <p
+                  className="text-sm mt-1"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   {call.behavioral_analysis?.question_analysis
                     ?.agent_open_questions || 0}{" "}
                   open,{" "}
@@ -757,62 +952,111 @@ export default function CallDetailModal({
                   closed
                 </p>
               </div>
-              <MessageSquare className="w-8 h-8 text-purple-400" />
+              <MessageSquare
+                className="w-8 h-8"
+                style={{ color: "var(--accent)" }}
+              />
             </div>
           </div>
 
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-400 mb-3">
+          <div
+            className="rounded-lg p-4"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h4
+              className="text-sm font-medium mb-3"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Active Listening
             </h4>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold text-white">
+                <p
+                  className="text-3xl font-bold"
+                  style={{ color: "var(--text-primary)" }}
+                >
                   {call.behavioral_analysis?.active_listening
                     ?.acknowledgment_count || 0}
                 </p>
-                <p className="text-sm text-green-400 mt-1">
+                <p className="text-sm mt-1" style={{ color: "#0caf60" }}>
                   {call.behavioral_analysis?.active_listening?.assessment ||
                     "Good"}
                 </p>
               </div>
-              <Heart className="w-8 h-8 text-pink-400" />
+              <Heart className="w-8 h-8" style={{ color: "#ec4899" }} />
             </div>
           </div>
         </div>
 
         {/* Strengths and Areas for Improvement */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
+          <div
+            className="rounded-lg p-6"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <CheckCircle
+                className="w-5 h-5 mr-2"
+                style={{ color: "#0caf60" }}
+              />
               Strengths
             </h3>
             <ul className="space-y-2">
               {call.behavioral_summary?.strengths?.map(
                 (strength: string, index: number) => (
                   <li key={index} className="flex items-start">
-                    <TrendingUp className="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-300">{strength}</span>
+                    <TrendingUp
+                      className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"
+                      style={{ color: "#0caf60" }}
+                    />
+                    <span style={{ color: "var(--text-secondary)" }}>
+                      {strength}
+                    </span>
                   </li>
-                )
+                ),
               )}
             </ul>
           </div>
 
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <TrendingDown className="w-5 h-5 mr-2 text-orange-400" />
+          <div
+            className="rounded-lg p-6"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <TrendingDown
+                className="w-5 h-5 mr-2"
+                style={{ color: "#e68a00" }}
+              />
               Areas for Improvement
             </h3>
             <ul className="space-y-2">
               {call.behavioral_summary?.areas_for_improvement?.map(
                 (area: string, index: number) => (
                   <li key={index} className="flex items-start">
-                    <AlertCircle className="w-4 h-4 text-orange-400 mr-2 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-300">{area}</span>
+                    <AlertCircle
+                      className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"
+                      style={{ color: "#e68a00" }}
+                    />
+                    <span style={{ color: "var(--text-secondary)" }}>
+                      {area}
+                    </span>
                   </li>
-                )
+                ),
               )}
             </ul>
           </div>
@@ -826,20 +1070,32 @@ export default function CallDetailModal({
 
     const positiveTips =
       call.coaching_tips?.tips?.filter(
-        (tip: any) => tip.priority === "positive"
+        (tip: any) => tip.priority === "positive",
       ) || [];
     const improvementTips =
       call.coaching_tips?.tips?.filter(
-        (tip: any) => tip.priority === "improvement"
+        (tip: any) => tip.priority === "improvement",
       ) || [];
 
     return (
       <div className="space-y-6">
         {/* Positive Feedback */}
         {positiveTips.length > 0 && (
-          <div className="bg-slate-900/50 border border-green-500/20 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
+          <div
+            className="rounded-lg p-6"
+            style={{
+              background: "var(--background)",
+              border: "1px solid rgba(16,185,129,0.2)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <CheckCircle
+                className="w-5 h-5 mr-2"
+                style={{ color: "#0caf60" }}
+              />
               What You Did Well
             </h3>
             <div className="space-y-4">
@@ -849,13 +1105,16 @@ export default function CallDetailModal({
                   className="flex items-start space-x-3 p-4 bg-green-500/10 border border-green-500/20 rounded-lg"
                 >
                   <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Award className="w-5 h-5 text-green-400" />
+                    <Award className="w-5 h-5" style={{ color: "#0caf60" }} />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-green-400 mb-1">
+                    <h4
+                      className="text-sm font-medium mb-1"
+                      style={{ color: "#0caf60" }}
+                    >
                       {tip.category}
                     </h4>
-                    <p className="text-gray-300">{tip.tip}</p>
+                    <p style={{ color: "var(--text-secondary)" }}>{tip.tip}</p>
                   </div>
                 </div>
               ))}
@@ -865,9 +1124,21 @@ export default function CallDetailModal({
 
         {/* Improvement Areas */}
         {improvementTips.length > 0 && (
-          <div className="bg-slate-900/50 border border-orange-500/20 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Lightbulb className="w-5 h-5 mr-2 text-orange-400" />
+          <div
+            className="rounded-lg p-6"
+            style={{
+              background: "var(--background)",
+              border: "1px solid rgba(245,158,11,0.2)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <Lightbulb
+                className="w-5 h-5 mr-2"
+                style={{ color: "#e68a00" }}
+              />
               Areas to Improve
             </h3>
             <div className="space-y-4">
@@ -877,13 +1148,19 @@ export default function CallDetailModal({
                   className="flex items-start space-x-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg"
                 >
                   <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <TrendingUp className="w-5 h-5 text-orange-400" />
+                    <TrendingUp
+                      className="w-5 h-5"
+                      style={{ color: "#e68a00" }}
+                    />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-orange-400 mb-1">
+                    <h4
+                      className="text-sm font-medium mb-1"
+                      style={{ color: "#e68a00" }}
+                    >
                       {tip.category}
                     </h4>
-                    <p className="text-gray-300">{tip.tip}</p>
+                    <p style={{ color: "var(--text-secondary)" }}>{tip.tip}</p>
                   </div>
                 </div>
               ))}
@@ -893,9 +1170,21 @@ export default function CallDetailModal({
 
         {/* Topics Discussed */}
         {call.topic_analysis?.main_topics && (
-          <div className="bg-slate-900/50 border border-white/10 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-blue-400" />
+          <div
+            className="rounded-lg p-6"
+            style={{
+              background: "var(--background)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h3
+              className="text-lg font-semibold mb-4 flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <MessageSquare
+                className="w-5 h-5 mr-2"
+                style={{ color: "var(--accent)" }}
+              />
               Topics Discussed
             </h3>
             <div className="flex flex-wrap gap-3">
@@ -903,16 +1192,22 @@ export default function CallDetailModal({
                 (topic: any, index: number) => (
                   <div
                     key={index}
-                    className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg"
+                    className="px-4 py-2 bg-blue-50 border border-blue-100 rounded-lg"
                   >
-                    <span className="text-blue-400 font-medium">
+                    <span
+                      className="font-medium"
+                      style={{ color: "var(--accent)" }}
+                    >
                       {topic.topic}
                     </span>
-                    <span className="text-gray-400 text-sm ml-2">
+                    <span
+                      className="text-sm ml-2"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
                       {(topic.relevance * 100).toFixed(0)}%
                     </span>
                   </div>
-                )
+                ),
               )}
             </div>
           </div>
@@ -925,25 +1220,38 @@ export default function CallDetailModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="bg-slate-800 border border-white/10 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl"
+        style={{ border: "1px solid var(--border)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div
+          className="p-6 flex items-center justify-between"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
-              <Phone className="w-6 h-6 text-white" />
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--accent-bg)" }}
+            >
+              <Phone className="w-6 h-6" style={{ color: "var(--accent)" }} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2
+                className="text-2xl font-bold"
+                style={{ color: "var(--text-primary)" }}
+              >
                 Call #{callId} Details
               </h2>
               {call && (
-                <div className="flex items-center space-x-4 mt-1 text-sm text-gray-400">
+                <div
+                  className="flex items-center space-x-4 mt-1 text-sm"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
                     {formatDate(call.call_date)}
@@ -958,14 +1266,17 @@ export default function CallDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="w-6 h-6 text-gray-400" />
+            <X className="w-6 h-6" style={{ color: "var(--text-tertiary)" }} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="px-6 pt-4 border-b border-white/10">
+        <div
+          className="px-6 pt-4"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
           <div className="flex space-x-1">
             {[
               { id: "overview", label: "Overview" },
@@ -983,14 +1294,22 @@ export default function CallDetailModal({
                       | "transcript"
                       | "emotions"
                       | "behavior"
-                      | "coaching"
+                      | "coaching",
                   )
                 }
-                className={`px-6 py-3 rounded-t-lg font-medium transition-all ${
-                  activeTab === tab.id
-                    ? "bg-slate-900/50 text-white border-t border-x border-white/10"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                }`}
+                className="px-6 py-3 rounded-t-lg font-medium transition-all"
+                style={{
+                  color:
+                    activeTab === tab.id
+                      ? "var(--accent)"
+                      : "var(--text-secondary)",
+                  borderBottom:
+                    activeTab === tab.id
+                      ? "2px solid var(--accent)"
+                      : "2px solid transparent",
+                  background:
+                    activeTab === tab.id ? "var(--accent-bg)" : "transparent",
+                }}
               >
                 {tab.label}
               </button>
@@ -1016,6 +1335,6 @@ export default function CallDetailModal({
         </div>
       </div>
     </div>,
-    portalRoot
+    portalRoot,
   );
 }

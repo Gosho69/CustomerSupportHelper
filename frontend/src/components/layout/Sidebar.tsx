@@ -9,10 +9,10 @@ import {
   Users,
   Building2,
   User,
-  Settings,
-  LogOut,
+  Upload,
   ChevronLeft,
   ChevronRight,
+  Mic,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -24,12 +24,6 @@ interface SidebarProps {
 export default function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const { clearAuth } = useAuthStore();
-
-  const handleLogout = () => {
-    // clearAuth(); // Commented out for demo
-    window.location.href = "/login";
-  };
 
   const navItems = {
     admin: [
@@ -48,7 +42,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
     agent: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/calls", label: "My Calls", icon: Phone },
-      { href: "/dashboard/upload-call", label: "Upload Call", icon: Phone },
+      { href: "/dashboard/upload-call", label: "Upload Call", icon: Upload },
       { href: "/dashboard/my-reports", label: "My Reports", icon: FileText },
       { href: "/dashboard/profile", label: "Profile", icon: User },
     ],
@@ -58,29 +52,34 @@ export default function Sidebar({ userRole }: SidebarProps) {
 
   return (
     <aside
-      className={`${
-        collapsed ? "w-20" : "w-64"
-      } bg-slate-900/50 backdrop-blur-md border-r border-white/10 transition-all duration-300 flex flex-col h-screen`}
+      className={`${collapsed ? "w-[68px]" : "w-60"} transition-all duration-200 flex flex-col h-screen bg-white border-r`}
+      style={{ borderColor: "var(--border)" }}
     >
-      {/* Sidebar Header */}
-      <div className="p-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
-        {!collapsed && (
-          <h2 className="text-white font-semibold text-lg">Dashboard</h2>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronLeft className="w-5 h-5 text-gray-400" />
+      {/* Logo */}
+      <div
+        className="h-16 flex items-center px-4 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <Link href="/dashboard" className="flex items-center space-x-2.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: "var(--accent)" }}
+          >
+            <Mic className="w-4.5 h-4.5 text-white" />
+          </div>
+          {!collapsed && (
+            <span
+              className="text-[15px] font-semibold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              AgentSights
+            </span>
           )}
-        </button>
+        </Link>
       </div>
 
-      {/* Navigation Items */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -89,18 +88,38 @@ export default function Sidebar({ userRole }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                isActive
-                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/30"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+              className={`flex items-center space-x-2.5 px-3 py-2 rounded-md text-[14px] font-medium transition-colors duration-150 ${
+                isActive ? "text-[var(--accent)]" : "hover:bg-[var(--hover-bg)]"
               }`}
+              style={{
+                color: isActive ? "var(--accent)" : "var(--text-secondary)",
+                background: isActive ? "var(--accent-bg)" : undefined,
+              }}
             >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span className="font-medium">{item.label}</span>}
+              <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+              {!collapsed && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
+
+      {/* Collapse toggle */}
+      <div
+        className="px-3 py-3 border-t"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center justify-center w-full p-2 rounded-md hover:bg-[var(--hover-bg)] transition-colors"
+          style={{ color: "var(--text-tertiary)" }}
+        >
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronLeft className="w-4 h-4" />
+          )}
+        </button>
+      </div>
     </aside>
   );
 }

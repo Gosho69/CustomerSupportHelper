@@ -19,19 +19,20 @@ interface PerformanceAreaChartProps {
 export default function PerformanceAreaChart({
   data,
   height = 250,
-  color = "#a855f7",
+  color = "#635bff",
 }: PerformanceAreaChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-        <XAxis dataKey="month" stroke="#9ca3af" />
-        <YAxis stroke="#9ca3af" domain={[0, 100]} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e3e8ee" />
+        <XAxis dataKey="month" stroke="#697386" />
+        <YAxis stroke="#697386" domain={[0, 100]} />
         <Tooltip
           contentStyle={{
-            backgroundColor: "#1e293b",
-            border: "1px solid #ffffff20",
+            backgroundColor: "#ffffff",
+            border: "1px solid #e3e8ee",
             borderRadius: "8px",
+            color: "#1a1f36",
           }}
         />
         <Area

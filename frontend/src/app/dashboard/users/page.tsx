@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   UsersHeader,
   UsersStats,
@@ -8,70 +8,50 @@ import {
   UsersTable,
   UserModal,
 } from "@/components/admin/users";
+import { usersApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
 export default function UsersPage() {
+  const { user: currentUser } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      username: "admin1",
-      email: "admin@techsolutions.com",
-      first_name: "John",
-      last_name: "Admin",
-      role: "admin" as const,
-      company: "Tech Solutions Inc",
-      is_active: true,
-      created_at: "2024-01-15",
-    },
-    {
-      id: 2,
-      username: "head1",
-      email: "sarah.head@techsolutions.com",
-      first_name: "Sarah",
-      last_name: "Johnson",
-      role: "head_of_department" as const,
-      company: "Tech Solutions Inc",
-      reporting_to: undefined,
-      is_active: true,
-      created_at: "2024-01-20",
-    },
-    {
-      id: 3,
-      username: "agent1",
-      email: "mike.agent@techsolutions.com",
-      first_name: "Mike",
-      last_name: "Davis",
-      role: "agent" as const,
-      company: "Tech Solutions Inc",
-      reporting_to: "Sarah Johnson",
-      is_active: true,
-      created_at: "2024-02-01",
-    },
-    {
-      id: 4,
-      username: "agent2",
-      email: "emma.agent@retail.com",
-      first_name: "Emma",
-      last_name: "Wilson",
-      role: "agent" as const,
-      company: "Global Retail Corp",
-      reporting_to: "Sarah Johnson",
-      is_active: false,
-      created_at: "2024-02-15",
-    },
-  ]);
+  // Fetch users from backend
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await usersApi.getAllUsers(
+        filterRole === "all" ? undefined : filterRole,
+      );
+      setUsers(response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterRole]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const filteredUsers = users.filter((user) => {
+    // Exclude the current logged-in user from the list
+    if (currentUser && user.id === currentUser.id) {
+      return false;
+    }
+
     const matchesSearch =
-      user.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filterRole === "all" || user.role === filterRole;
-    return matchesSearch && matchesRole;
+      user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   const handleAddUser = () => {
@@ -84,28 +64,56 @@ export default function UsersPage() {
     setShowModal(true);
   };
 
-  const handleDeleteUser = (id: number) => {
+  const handleDeleteUser = async (id: number) => {
+    // Prevent self-deletion
+    if (currentUser && id === currentUser.id) {
+      alert("You cannot delete your own account!");
+      return;
+    }
+
     if (confirm("Are you sure you want to delete this user?")) {
-      setUsers(users.filter((u) => u.id !== id));
+      try {
+        await usersApi.deleteUser(id);
+        // Refresh the list after deletion
+        await fetchUsers();
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+        alert("Failed to delete user");
+      }
     }
   };
 
-  const handleSaveUser = (userData: any) => {
-    if (selectedUser) {
-      setUsers(
-        users.map((u) => (u.id === selectedUser.id ? { ...u, ...userData } : u))
-      );
-    } else {
-      setUsers([
-        ...users,
-        {
-          ...userData,
-          id: users.length + 1,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+  const handleSaveUser = async (userData: any) => {
+    try {
+      // Convert string values to integers for foreign keys
+      const processedData = {
+        ...userData,
+        company: userData.company ? parseInt(userData.company) : null,
+        reporting_to: userData.reporting_to
+          ? parseInt(userData.reporting_to)
+          : null,
+      };
+
+      if (selectedUser) {
+        // Edit existing
+        await usersApi.updateUser(selectedUser.id, processedData);
+      } else {
+        // Add new - use appropriate endpoint based on role
+        if (userData.role === "agent") {
+          await usersApi.createAgent(processedData);
+        } else if (userData.role === "head_of_department") {
+          await usersApi.createHead(processedData);
+        } else {
+          throw new Error("Cannot create admin users from this interface");
+        }
+      }
+      setShowModal(false);
+      // Refresh the list after save
+      await fetchUsers();
+    } catch (error) {
+      console.error("Failed to save user:", error);
+      alert("Failed to save user");
     }
-    setShowModal(false);
   };
 
   const stats = {
@@ -115,6 +123,14 @@ export default function UsersPage() {
     agents: users.filter((u) => u.role === "agent").length,
     active: users.filter((u) => u.is_active).length,
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-400">Loading users...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -137,6 +153,7 @@ export default function UsersPage() {
 
       <UsersTable
         users={filteredUsers}
+        currentUserId={currentUser?.id}
         onEdit={handleEditUser}
         onDelete={handleDeleteUser}
       />

@@ -7,9 +7,22 @@ interface TeamSkillsChartProps {
 
 export default function TeamSkillsChart({ data }: TeamSkillsChartProps) {
   return (
-    <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-      <h2 className="text-xl font-bold text-white mb-6 flex items-center">
-        <BarChart3 className="w-5 h-5 mr-2 text-purple-400" />
+    <div
+      className="rounded-lg p-6"
+      style={{
+        background: "#ffffff",
+        border: "1px solid var(--border)",
+        borderRadius: "8px",
+      }}
+    >
+      <h2
+        className="text-xl font-bold mb-6 flex items-center"
+        style={{ color: "var(--text-primary)" }}
+      >
+        <BarChart3
+          className="w-5 h-5 mr-2"
+          style={{ color: "var(--accent)" }}
+        />
         Team Skills Overview
       </h2>
       <SkillsRadarChart data={data} />

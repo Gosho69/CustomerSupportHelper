@@ -10,9 +10,16 @@ export default function PageHeader({
   children,
 }: PageHeaderProps) {
   return (
-    <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white">
-      <h1 className="text-3xl font-bold mb-2">{title}</h1>
-      <p className="text-purple-100 mb-6">{subtitle}</p>
+    <div className="mb-1">
+      <h1
+        className="text-2xl font-semibold"
+        style={{ color: "var(--text-primary)" }}
+      >
+        {title}
+      </h1>
+      <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+        {subtitle}
+      </p>
       {children}
     </div>
   );

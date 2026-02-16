@@ -13,6 +13,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui";
 
 interface DashboardStats {
   totalCalls: number;
@@ -61,211 +62,382 @@ export default function AgentDashboard() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const cardStyle: React.CSSProperties = {
+    background: "#ffffff",
+    border: "1px solid var(--border, #e3e8ee)",
+    borderRadius: "8px",
+  };
+
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, Agent!</h1>
-        <p className="text-blue-100 mb-6">
-          Here's your performance overview for this week
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-blue-100 text-sm mb-1">Today's Calls</p>
-            <p className="text-3xl font-bold">{stats.todayCalls}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-blue-100 text-sm mb-1">This Week</p>
-            <p className="text-3xl font-bold">{stats.weekCalls}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-blue-100 text-sm mb-1">Performance</p>
-            <p className="text-3xl font-bold">{stats.performanceScore}%</p>
-          </div>
-        </div>
+      {/* Page Header */}
+      <div>
+        <PageHeader
+          title={`Welcome back, Agent!`}
+          subtitle={`Here's your performance overview for this week`}
+        />
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Link
-          href="/dashboard/upload-call"
-          className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Upload className="w-6 h-6 text-blue-400" />
-            </div>
-            <span className="text-blue-400 text-sm font-medium">Upload</span>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">
-            Upload New Call
-          </h3>
-          <p className="text-gray-400 text-sm">
-            Upload and analyze a new call recording
+      {/* Top Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="rounded-lg p-6" style={cardStyle}>
+          <p
+            className="mb-1 text-sm font-medium"
+            style={{ color: "var(--text-secondary, #697386)" }}
+          >
+            Today's Calls
           </p>
-        </Link>
-
-        <Link
-          href="/dashboard/my-reports"
-          className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <FileText className="w-6 h-6 text-cyan-400" />
-            </div>
-            <span className="text-cyan-400 text-sm font-medium">View</span>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">My Reports</h3>
-          <p className="text-gray-400 text-sm">
-            View and analyze all your call recordings
-          </p>
-        </Link>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <Phone className="w-5 h-5 text-blue-400" />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Total Calls</p>
-          <p className="text-3xl font-bold text-white">{stats.totalCalls}</p>
-        </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-cyan-400" />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Avg Duration</p>
-          <p className="text-3xl font-bold text-white">
-            {formatDuration(stats.avgDuration)}
+          <p
+            className="text-3xl font-bold"
+            style={{ color: "var(--text-primary, #1a1f36)" }}
+          >
+            {stats.todayCalls}
           </p>
         </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-purple-400" />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Reports</p>
-          <p className="text-3xl font-bold text-white">{stats.recentReports}</p>
+        <div className="rounded-lg p-6" style={cardStyle}>
+          <p
+            className="mb-1 text-sm font-medium"
+            style={{ color: "var(--text-secondary, #697386)" }}
+          >
+            This Week
+          </p>
+          <p
+            className="text-3xl font-bold"
+            style={{ color: "var(--text-primary, #1a1f36)" }}
+          >
+            {stats.weekCalls}
+          </p>
         </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-              <Award className="w-5 h-5 text-green-400" />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Performance</p>
-          <p className="text-3xl font-bold text-white">
+        <div className="rounded-lg p-6" style={cardStyle}>
+          <p
+            className="mb-1 text-sm font-medium"
+            style={{ color: "var(--text-secondary, #697386)" }}
+          >
+            Performance
+          </p>
+          <p
+            className="text-3xl font-bold"
+            style={{ color: "var(--accent, #635bff)" }}
+          >
             {stats.performanceScore}%
           </p>
         </div>
       </div>
 
-      {/* Recent Activity and Latest Report */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Calls */}
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <Activity className="w-5 h-5 mr-2 text-blue-400" />
-              Recent Calls
-            </h2>
+      {/* Main Layout: left column for quick actions & stats, right column for activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Link
-              href="/dashboard/calls"
-              className="text-sm text-blue-400 hover:text-blue-300"
+              href="/dashboard/upload-call"
+              className="rounded-lg p-6 transition-shadow hover:shadow-md"
+              style={cardStyle}
             >
-              View All
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {recentCalls.map((call) => (
-              <div
-                key={call.id}
-                className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition-colors"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">Call #{call.id}</p>
-                    <p className="text-gray-400 text-sm">{call.date}</p>
-                  </div>
+              <div className="flex items-center mb-4">
+                <div
+                  className="w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: "var(--accent-bg, #f0efff)",
+                  }}
+                >
+                  <Upload
+                    className="w-6 h-6"
+                    style={{ color: "var(--accent, #635bff)" }}
+                  />
                 </div>
-                <div className="text-right">
-                  <p className="text-white font-medium">
-                    {formatDuration(call.duration)}
+                <div className="ml-4">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-primary, #1a1f36)" }}
+                  >
+                    Upload New Call
                   </p>
-                  <p className="text-green-400 text-sm">{call.score}% score</p>
+                  <p
+                    className="text-sm"
+                    style={{ color: "var(--text-secondary, #697386)" }}
+                  >
+                    Upload and analyze a new call recording
+                  </p>
                 </div>
               </div>
-            ))}
+            </Link>
+
+            <Link
+              href="/dashboard/my-reports"
+              className="rounded-lg p-6 transition-shadow hover:shadow-md"
+              style={cardStyle}
+            >
+              <div className="flex items-center mb-4">
+                <div
+                  className="w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: "var(--accent-bg, #f0efff)",
+                  }}
+                >
+                  <FileText
+                    className="w-6 h-6"
+                    style={{ color: "var(--accent, #635bff)" }}
+                  />
+                </div>
+                <div className="ml-4">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-primary, #1a1f36)" }}
+                  >
+                    My Reports
+                  </p>
+                  <p
+                    className="text-sm"
+                    style={{ color: "var(--text-secondary, #697386)" }}
+                  >
+                    View and analyze all your call recordings
+                  </p>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Stats Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="rounded-lg p-6" style={cardStyle}>
+              <div className="mb-4">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ background: "var(--accent-bg, #f0efff)" }}
+                >
+                  <Phone
+                    className="w-5 h-5"
+                    style={{ color: "var(--accent, #635bff)" }}
+                  />
+                </div>
+              </div>
+              <p
+                className="text-sm mb-1"
+                style={{ color: "var(--text-secondary, #697386)" }}
+              >
+                Total Calls
+              </p>
+              <p
+                className="text-3xl font-bold"
+                style={{ color: "var(--text-primary, #1a1f36)" }}
+              >
+                {stats.totalCalls}
+              </p>
+            </div>
+
+            <div className="rounded-lg p-6" style={cardStyle}>
+              <div className="mb-4">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ background: "var(--accent-bg, #f0efff)" }}
+                >
+                  <Clock
+                    className="w-5 h-5"
+                    style={{ color: "var(--accent, #635bff)" }}
+                  />
+                </div>
+              </div>
+              <p
+                className="text-sm mb-1"
+                style={{ color: "var(--text-secondary, #697386)" }}
+              >
+                Avg Duration
+              </p>
+              <p
+                className="text-3xl font-bold"
+                style={{ color: "var(--text-primary, #1a1f36)" }}
+              >
+                {formatDuration(stats.avgDuration)}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Latest Performance Report */}
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <Target className="w-5 h-5 mr-2 text-purple-400" />
-              Latest Report
-            </h2>
-            <Link
-              href="/dashboard/reports"
-              className="text-sm text-blue-400 hover:text-blue-300"
-            >
-              View All
-            </Link>
+        {/* Recent Activity and Latest Report */}
+        <div className="space-y-6">
+          {/* Recent Calls */}
+          <div className="rounded-lg p-6" style={cardStyle}>
+            <div className="flex items-center justify-between mb-6">
+              <h2
+                className="text-base font-semibold flex items-center"
+                style={{ color: "var(--text-primary, #1a1f36)" }}
+              >
+                <Activity
+                  className="w-5 h-5 mr-2"
+                  style={{ color: "var(--accent, #635bff)" }}
+                />
+                Recent Calls
+              </h2>
+              <Link
+                href="/dashboard/calls"
+                className="text-sm font-medium"
+                style={{ color: "var(--accent, #635bff)" }}
+              >
+                View All
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {recentCalls.map((call) => (
+                <div
+                  key={call.id}
+                  className="flex items-center justify-between p-4 rounded-lg transition-colors"
+                  style={{
+                    background: "var(--background, #f6f8fa)",
+                    border: "1px solid var(--border, #e3e8ee)",
+                  }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ background: "var(--accent-bg, #f0efff)" }}
+                    >
+                      <FileText
+                        className="w-4 h-4"
+                        style={{ color: "var(--accent, #635bff)" }}
+                      />
+                    </div>
+                    <div>
+                      <p
+                        className="font-medium text-sm"
+                        style={{ color: "var(--text-primary, #1a1f36)" }}
+                      >
+                        Call #{call.id}
+                      </p>
+                      <p
+                        className="text-xs"
+                        style={{ color: "var(--text-secondary, #697386)" }}
+                      >
+                        {call.date}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className="font-medium text-sm"
+                      style={{ color: "var(--text-primary, #1a1f36)" }}
+                    >
+                      {formatDuration(call.duration)}
+                    </p>
+                    <p
+                      className="text-xs font-medium"
+                      style={{ color: "#0d9488" }}
+                    >
+                      {call.score}% score
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg">
+
+          {/* Latest Performance Report */}
+          <div className="rounded-lg p-6" style={cardStyle}>
+            <div className="flex items-center justify-between mb-6">
+              <h2
+                className="text-base font-semibold flex items-center"
+                style={{ color: "var(--text-primary, #1a1f36)" }}
+              >
+                <Target
+                  className="w-5 h-5 mr-2"
+                  style={{ color: "var(--accent, #635bff)" }}
+                />
+                Latest Report
+              </h2>
+              <Link
+                href="/dashboard/reports"
+                className="text-sm font-medium"
+                style={{ color: "var(--accent, #635bff)" }}
+              >
+                View All
+              </Link>
+            </div>
+            <div className="space-y-4">
+              <div
+                className="flex items-center justify-between p-4 rounded-lg"
+                style={{
+                  background: "var(--accent-bg, #f0efff)",
+                  border: "1px solid var(--border, #e3e8ee)",
+                }}
+              >
+                <div>
+                  <p
+                    className="font-semibold text-sm"
+                    style={{ color: "var(--text-primary, #1a1f36)" }}
+                  >
+                    {latestReport.type}
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--text-secondary, #697386)" }}
+                  >
+                    {latestReport.date}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p
+                    className="text-2xl font-bold"
+                    style={{ color: "var(--accent, #635bff)" }}
+                  >
+                    {latestReport.score}%
+                  </p>
+                  <p
+                    className="text-xs font-medium"
+                    style={{ color: "var(--text-secondary, #697386)" }}
+                  >
+                    {latestReport.overallRating}
+                  </p>
+                </div>
+              </div>
+
               <div>
-                <p className="text-white font-medium">{latestReport.type}</p>
-                <p className="text-gray-300 text-sm">{latestReport.date}</p>
+                <h3
+                  className="text-xs font-semibold uppercase tracking-wider mb-3"
+                  style={{ color: "var(--text-secondary, #697386)" }}
+                >
+                  Strengths
+                </h3>
+                <div className="space-y-2">
+                  {latestReport.strengths.map((strength, index) => (
+                    <div key={index} className="flex items-start space-x-2">
+                      <CheckCircle
+                        className="w-4 h-4 mt-0.5 flex-shrink-0"
+                        style={{ color: "#0d9488" }}
+                      />
+                      <p
+                        className="text-sm"
+                        style={{ color: "var(--text-primary, #1a1f36)" }}
+                      >
+                        {strength}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-white">
-                  {latestReport.score}%
-                </p>
-                <p className="text-green-400 text-sm">
-                  {latestReport.overallRating}
-                </p>
-              </div>
-            </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 mb-3">
-                Strengths
-              </h3>
-              <div className="space-y-2">
-                {latestReport.strengths.map((strength, index) => (
-                  <div key={index} className="flex items-start space-x-2">
-                    <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-gray-300 text-sm">{strength}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 mb-3">
-                Areas to Improve
-              </h3>
-              <div className="space-y-2">
-                {latestReport.improvements.map((improvement, index) => (
-                  <div key={index} className="flex items-start space-x-2">
-                    <TrendingUp className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-gray-300 text-sm">{improvement}</p>
-                  </div>
-                ))}
+              <div>
+                <h3
+                  className="text-xs font-semibold uppercase tracking-wider mb-3"
+                  style={{ color: "var(--text-secondary, #697386)" }}
+                >
+                  Areas to Improve
+                </h3>
+                <div className="space-y-2">
+                  {latestReport.improvements.map((improvement, index) => (
+                    <div key={index} className="flex items-start space-x-2">
+                      <TrendingUp
+                        className="w-4 h-4 mt-0.5 flex-shrink-0"
+                        style={{ color: "#e77c40" }}
+                      />
+                      <p
+                        className="text-sm"
+                        style={{ color: "var(--text-primary, #1a1f36)" }}
+                      >
+                        {improvement}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

@@ -14,6 +14,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui";
 
 interface TeamMember {
   id: number;
@@ -120,41 +121,88 @@ export default function HeadOfDepartmentDashboard() {
   const getTrendIcon = (trend: "up" | "down" | "stable") => {
     switch (trend) {
       case "up":
-        return <TrendingUp className="w-4 h-4 text-green-400" />;
+        return (
+          <TrendingUp className="w-4 h-4" style={{ color: "var(--success)" }} />
+        );
       case "down":
-        return <TrendingUp className="w-4 h-4 text-red-400 rotate-180" />;
+        return (
+          <TrendingUp
+            className="w-4 h-4 rotate-180"
+            style={{ color: "var(--danger)" }}
+          />
+        );
       default:
-        return <div className="w-4 h-4 bg-gray-400 rounded-full" />;
+        return (
+          <div
+            className="w-4 h-4 rounded-full"
+            style={{ background: "var(--text-tertiary)" }}
+          />
+        );
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-green-400";
-    if (score >= 70) return "text-yellow-400";
-    return "text-red-400";
+    if (score >= 85) return "var(--success)";
+    if (score >= 70) return "var(--warning)";
+    return "var(--danger)";
+  };
+
+  const cardStyle: React.CSSProperties = {
+    background: "#ffffff",
+    border: "1px solid var(--border, #e3e8ee)",
+    borderRadius: "8px",
   };
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Team Performance Overview</h1>
-        <p className="text-purple-100 mb-6">
-          Monitor and manage your team's performance
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-purple-100 text-sm mb-1">Team Members</p>
-            <p className="text-3xl font-bold">{stats.totalTeamMembers}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-purple-100 text-sm mb-1">This Week's Calls</p>
-            <p className="text-3xl font-bold">{stats.weekTeamCalls}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-purple-100 text-sm mb-1">Avg Performance</p>
-            <p className="text-3xl font-bold">{stats.avgTeamPerformance}%</p>
-          </div>
+      <PageHeader
+        title="Team Performance Overview"
+        subtitle="Monitor and manage your team's performance"
+      />
+
+      {/* Top Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="rounded-lg p-6" style={cardStyle}>
+          <p
+            className="mb-1 text-sm font-medium"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Team Members
+          </p>
+          <p
+            className="text-3xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {stats.totalTeamMembers}
+          </p>
+        </div>
+        <div className="rounded-lg p-6" style={cardStyle}>
+          <p
+            className="mb-1 text-sm font-medium"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            This Week's Calls
+          </p>
+          <p
+            className="text-3xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {stats.weekTeamCalls}
+          </p>
+        </div>
+        <div className="rounded-lg p-6" style={cardStyle}>
+          <p
+            className="mb-1 text-sm font-medium"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Avg Performance
+          </p>
+          <p
+            className="text-3xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {stats.avgTeamPerformance}%
+          </p>
         </div>
       </div>
 
@@ -162,128 +210,169 @@ export default function HeadOfDepartmentDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Link
           href="/dashboard/team"
-          className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
+          className="rounded-lg p-6 hover:shadow-md transition-shadow"
+          style={cardStyle}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Users className="w-6 h-6 text-blue-400" />
+          <div className="flex items-center">
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--accent-bg)" }}
+            >
+              <Users className="w-6 h-6" style={{ color: "var(--accent)" }} />
             </div>
-            <span className="text-blue-400 text-sm font-medium">Manage</span>
+            <div className="ml-4">
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-primary)" }}
+              >
+                My Team
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                View and manage team members
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">My Team</h3>
-          <p className="text-gray-400 text-sm">View and manage team members</p>
         </Link>
 
         <Link
           href="/dashboard/calls"
-          className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
+          className="rounded-lg p-6 hover:shadow-md transition-shadow"
+          style={cardStyle}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Phone className="w-6 h-6 text-cyan-400" />
+          <div className="flex items-center">
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--accent-bg)" }}
+            >
+              <Phone className="w-6 h-6" style={{ color: "var(--accent)" }} />
             </div>
-            <span className="text-cyan-400 text-sm font-medium">View All</span>
+            <div className="ml-4">
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Team Calls
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                Review all team call recordings
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Team Calls</h3>
-          <p className="text-gray-400 text-sm">
-            Review all team call recordings
-          </p>
         </Link>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-blue-400" />
+        {[
+          {
+            icon: FileText,
+            label: "Team Members",
+            value: stats.totalTeamMembers,
+          },
+          { icon: Phone, label: "Total Calls", value: stats.totalTeamCalls },
+          { icon: FileText, label: "Reports", value: stats.reportsGenerated },
+          {
+            icon: Award,
+            label: "Avg Performance",
+            value: `${stats.avgTeamPerformance}%`,
+          },
+        ].map((stat, index) => (
+          <div key={index} className="rounded-lg p-6" style={cardStyle}>
+            <div className="flex items-center justify-between mb-4">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ background: "var(--accent-bg)" }}
+              >
+                <stat.icon
+                  className="w-5 h-5"
+                  style={{ color: "var(--accent)" }}
+                />
+              </div>
             </div>
+            <p
+              className="text-sm mb-1"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {stat.label}
+            </p>
+            <p
+              className="text-3xl font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {stat.value}
+            </p>
           </div>
-          <p className="text-gray-400 text-sm mb-1">Team Members</p>
-          <p className="text-3xl font-bold text-white">
-            {stats.totalTeamMembers}
-          </p>
-        </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-              <Phone className="w-5 h-5 text-cyan-400" />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Total Calls</p>
-          <p className="text-3xl font-bold text-white">
-            {stats.totalTeamCalls}
-          </p>
-        </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-purple-400" />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Reports</p>
-          <p className="text-3xl font-bold text-white">
-            {stats.reportsGenerated}
-          </p>
-        </div>
-
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-              <Award className="w-5 h-5 text-green-400" />
-            </div>
-          </div>
-          <p className="text-gray-400 text-sm mb-1">Avg Performance</p>
-          <p className="text-3xl font-bold text-white">
-            {stats.avgTeamPerformance}%
-          </p>
-        </div>
+        ))}
       </div>
 
       {/* Team Performance and Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Team Members Performance */}
-        <div className="lg:col-span-2 bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
+        <div className="lg:col-span-2 rounded-lg p-6" style={cardStyle}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2 text-blue-400" />
+            <h2
+              className="text-lg font-semibold flex items-center"
+              style={{ color: "var(--text-primary)" }}
+            >
+              <BarChart3
+                className="w-5 h-5 mr-2"
+                style={{ color: "var(--accent)" }}
+              />
               Team Performance
             </h2>
             <Link
               href="/dashboard/team"
-              className="text-sm text-blue-400 hover:text-blue-300"
+              className="text-sm font-medium"
+              style={{ color: "var(--accent)" }}
             >
               View All
             </Link>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {teamMembers.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition-colors"
+                className="flex items-center justify-between p-4 rounded-lg transition-colors"
+                style={{ background: "var(--background)" }}
               >
                 <div className="flex items-center space-x-4 flex-1">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: "var(--accent-bg)" }}
+                  >
+                    <span
+                      className="font-medium text-sm"
+                      style={{ color: "var(--accent)" }}
+                    >
                       {member.name.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-white font-medium">{member.name}</p>
-                    <p className="text-gray-400 text-sm">{member.email}</p>
+                    <p
+                      className="font-medium"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {member.name}
+                    </p>
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {member.email}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-6">
                   <div className="text-right">
-                    <p className="text-white font-medium">
+                    <p
+                      className="font-medium"
+                      style={{ color: "var(--text-primary)" }}
+                    >
                       {member.totalCalls} calls
                     </p>
                     <p
-                      className={`text-sm font-medium ${getScoreColor(
-                        member.avgScore
-                      )}`}
+                      className="text-sm font-medium"
+                      style={{ color: getScoreColor(member.avgScore) }}
                     >
                       {member.avgScore}% avg
                     </p>
@@ -298,32 +387,53 @@ export default function HeadOfDepartmentDashboard() {
         </div>
 
         {/* Alerts & Notifications */}
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2 text-orange-400" />
+        <div className="rounded-lg p-6" style={cardStyle}>
+          <h2
+            className="text-lg font-semibold mb-6 flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <AlertCircle
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--warning)" }}
+            />
             Alerts
           </h2>
           <div className="space-y-4">
             {alerts.map((alert) => (
               <div
                 key={alert.id}
-                className={`p-4 rounded-lg border ${
-                  alert.type === "warning"
-                    ? "bg-orange-500/10 border-orange-500/30"
-                    : "bg-blue-500/10 border-blue-500/30"
-                }`}
+                className="p-4 rounded-lg"
+                style={{
+                  background:
+                    alert.type === "warning"
+                      ? "var(--warning-bg, #fff8e6)"
+                      : "var(--accent-bg)",
+                  border: `1px solid ${alert.type === "warning" ? "var(--warning)" : "var(--accent)"}20`,
+                }}
               >
                 <div className="flex items-start space-x-3">
                   <AlertCircle
-                    className={`w-5 h-5 mt-0.5 ${
-                      alert.type === "warning"
-                        ? "text-orange-400"
-                        : "text-blue-400"
-                    }`}
+                    className="w-5 h-5 mt-0.5"
+                    style={{
+                      color:
+                        alert.type === "warning"
+                          ? "var(--warning)"
+                          : "var(--accent)",
+                    }}
                   />
                   <div className="flex-1">
-                    <p className="text-white text-sm mb-1">{alert.message}</p>
-                    <p className="text-gray-400 text-xs">{alert.time}</p>
+                    <p
+                      className="text-sm mb-1"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {alert.message}
+                    </p>
+                    <p
+                      className="text-xs"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
+                      {alert.time}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -333,7 +443,8 @@ export default function HeadOfDepartmentDashboard() {
           <div className="mt-6">
             <Link
               href="/dashboard/team"
-              className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-purple-500/30 flex items-center justify-center space-x-2"
+              className="w-full px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center space-x-2 text-white"
+              style={{ background: "var(--accent)" }}
             >
               <UserPlus className="w-4 h-4" />
               <span>Add Team Member</span>
@@ -343,15 +454,22 @@ export default function HeadOfDepartmentDashboard() {
       </div>
 
       {/* Recent Reports */}
-      <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
+      <div className="rounded-lg p-6" style={cardStyle}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center">
-            <Target className="w-5 h-5 mr-2 text-purple-400" />
+          <h2
+            className="text-lg font-semibold flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <Target
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--accent)" }}
+            />
             Recent Reports
           </h2>
           <Link
             href="/dashboard/reports"
-            className="text-sm text-blue-400 hover:text-blue-300"
+            className="text-sm font-medium"
+            style={{ color: "var(--accent)" }}
           >
             View All
           </Link>
@@ -360,20 +478,35 @@ export default function HeadOfDepartmentDashboard() {
           {recentReports.map((report) => (
             <div
               key={report.id}
-              className="p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition-colors"
+              className="p-4 rounded-lg transition-colors"
+              style={{ background: "var(--background)" }}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-xs font-medium rounded-full">
+                <span
+                  className="px-3 py-1 text-xs font-medium rounded-full"
+                  style={{
+                    background: "var(--accent-bg)",
+                    color: "var(--accent)",
+                  }}
+                >
                   {report.type}
                 </span>
                 <span
-                  className={`text-xl font-bold ${getScoreColor(report.score)}`}
+                  className="text-xl font-bold"
+                  style={{ color: getScoreColor(report.score) }}
                 >
                   {report.score}%
                 </span>
               </div>
-              <p className="text-white font-medium mb-1">{report.agentName}</p>
-              <p className="text-gray-400 text-sm">{report.date}</p>
+              <p
+                className="font-medium mb-1"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {report.agentName}
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                {report.date}
+              </p>
             </div>
           ))}
         </div>

@@ -31,29 +31,41 @@ export default function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/20 backdrop-blur-[2px]"
         onClick={onClose}
       />
       <div
-        className={`relative bg-slate-800 rounded-2xl p-8 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto border border-white/10`}
+        className={`relative bg-white rounded-xl p-6 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto shadow-xl`}
+        style={{ border: "1px solid var(--border)" }}
       >
         {title && (
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">{title}</h2>
+          <div
+            className="flex items-center justify-between mb-5 pb-4 border-b"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <h2
+              className="text-lg font-semibold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {title}
+            </h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 rounded-md hover:bg-[var(--hover-bg)] transition-colors"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X
+                className="w-4 h-4"
+                style={{ color: "var(--text-tertiary)" }}
+              />
             </button>
           </div>
         )}
         {!title && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-[var(--hover-bg)] transition-colors"
           >
-            <span className="text-gray-400 text-2xl">×</span>
+            <X className="w-4 h-4" style={{ color: "var(--text-tertiary)" }} />
           </button>
         )}
         {children}

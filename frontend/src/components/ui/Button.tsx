@@ -12,20 +12,34 @@ interface ButtonProps {
   type?: "button" | "submit" | "reset";
 }
 
-const variantStyles = {
-  primary:
-    "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white",
-  secondary: "bg-slate-700 hover:bg-slate-600 text-white",
-  outline:
-    "bg-slate-800/50 hover:bg-slate-800 border border-white/10 text-white",
-  danger: "bg-red-600 hover:bg-red-700 text-white",
+const sizeStyles = {
+  sm: "px-3 py-1.5 text-sm",
+  md: "px-4 py-2 text-sm",
+  lg: "px-5 py-2.5 text-base",
 };
 
-const sizeStyles = {
-  sm: "px-4 py-2 text-sm",
-  md: "px-6 py-3 text-base",
-  lg: "px-8 py-4 text-lg",
-};
+function getVariantStyles(variant: string): React.CSSProperties {
+  switch (variant) {
+    case "primary":
+      return { background: "var(--accent)", color: "white" };
+    case "secondary":
+      return {
+        background: "var(--background)",
+        color: "var(--text-primary)",
+        border: "1px solid var(--border)",
+      };
+    case "outline":
+      return {
+        background: "white",
+        color: "var(--text-primary)",
+        border: "1px solid var(--border)",
+      };
+    case "danger":
+      return { background: "var(--danger)", color: "white" };
+    default:
+      return {};
+  }
+}
 
 export default function Button({
   children,
@@ -43,15 +57,14 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl font-semibold transition-all flex items-center justify-center space-x-2 ${
-        variantStyles[variant]
-      } ${sizeStyles[size]} ${
-        disabled ? "opacity-50 cursor-not-allowed" : ""
+      style={getVariantStyles(variant)}
+      className={`rounded-md font-medium transition-all flex items-center justify-center space-x-2 ${sizeStyles[size]} ${
+        disabled ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"
       } ${className}`}
     >
-      {Icon && iconPosition === "left" && <Icon className="w-5 h-5" />}
+      {Icon && iconPosition === "left" && <Icon className="w-4 h-4" />}
       <span>{children}</span>
-      {Icon && iconPosition === "right" && <Icon className="w-5 h-5" />}
+      {Icon && iconPosition === "right" && <Icon className="w-4 h-4" />}
     </button>
   );
 }

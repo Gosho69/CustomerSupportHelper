@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import api from "@/lib/api";
 
 interface User {
   id: number;
@@ -7,6 +8,7 @@ interface User {
   email: string;
   first_name: string;
   last_name: string;
+  phone?: string;
   role: "admin" | "head_of_department" | "agent";
   company?: number;
   company_name?: string;
@@ -34,6 +36,9 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem("access_token", accessToken);
           localStorage.setItem("refresh_token", refreshToken);
           localStorage.setItem("user", JSON.stringify(user));
+
+          // Immediately set axios default header to avoid race conditions
+          api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
         }
       },
       clearAuth: () => {
@@ -42,6 +47,9 @@ export const useAuthStore = create<AuthState>()(
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
           localStorage.removeItem("user");
+
+          // Remove header from axios defaults
+          delete api.defaults.headers.common.Authorization;
         }
       },
       isAuthenticated: () => {
@@ -51,6 +59,6 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-    }
-  )
+    },
+  ),
 );

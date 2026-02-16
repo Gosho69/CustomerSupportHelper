@@ -39,19 +39,32 @@ export default function ReportDetailModal({
   if (!report) return null;
 
   const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-green-400";
-    if (score >= 70) return "text-yellow-400";
-    return "text-red-400";
+    return "";
   };
 
   const getTrendIcon = (trend: "up" | "down" | "stable") => {
     switch (trend) {
       case "up":
-        return <TrendingUp className="w-4 h-4 text-green-400" />;
+        return (
+          <TrendingUp
+            className="w-4 h-4"
+            style={{ color: "var(--success, #0caf60)" }}
+          />
+        );
       case "down":
-        return <TrendingDown className="w-4 h-4 text-red-400" />;
+        return (
+          <TrendingDown
+            className="w-4 h-4"
+            style={{ color: "var(--warning, #e68a00)" }}
+          />
+        );
       default:
-        return <div className="w-4 h-4 bg-gray-400 rounded-full" />;
+        return (
+          <div
+            className="w-4 h-4 rounded-full"
+            style={{ background: "var(--text-secondary)" }}
+          />
+        );
     }
   };
 
@@ -59,30 +72,50 @@ export default function ReportDetailModal({
     <Modal isOpen={!!report} onClose={onClose} size="5xl">
       {/* Header */}
       <div className="flex items-start space-x-6 mb-8">
-        <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-          <span className="text-white font-bold text-3xl">
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center"
+          style={{ background: "var(--accent-bg)" }}
+        >
+          <span
+            style={{ color: "var(--accent)" }}
+            className="font-bold text-3xl"
+          >
             {report.agentName.charAt(0)}
           </span>
         </div>
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            <h2 className="text-2xl font-bold text-white">
+            <h2
+              className="text-2xl font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
               {report.agentName}
             </h2>
-            <Badge variant={report.type === "weekly" ? "blue" : "purple"}>
+            <Badge variant="gray">
               {report.type.charAt(0).toUpperCase() + report.type.slice(1)}{" "}
               Report
             </Badge>
           </div>
-          <p className="text-gray-400">{report.agentEmail}</p>
-          <p className="text-gray-400 text-sm mt-1">Period: {report.period}</p>
+          <p style={{ color: "var(--text-secondary)" }}>{report.agentEmail}</p>
+          <p
+            className="text-sm mt-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Period: {report.period}
+          </p>
         </div>
         <div className="text-right">
-          <p className="text-gray-400 text-sm mb-1">Overall Score</p>
+          <p
+            className="text-sm mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Overall Score
+          </p>
           <p
             className={`text-4xl font-bold ${getScoreColor(
-              report.overallScore
+              report.overallScore,
             )}`}
+            style={{ color: "var(--text-primary)" }}
           >
             {report.overallScore}%
           </p>
@@ -92,27 +125,80 @@ export default function ReportDetailModal({
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-slate-900/50 rounded-xl p-4">
-          <p className="text-gray-400 text-sm mb-1">Total Calls</p>
-          <p className="text-2xl font-bold text-white">{report.totalCalls}</p>
+        <div
+          className="rounded-lg p-4"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <p
+            className="text-sm mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Total Calls
+          </p>
+          <p
+            className="text-2xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {report.totalCalls}
+          </p>
         </div>
-        <div className="bg-slate-900/50 rounded-xl p-4">
-          <p className="text-gray-400 text-sm mb-1">Avg Duration</p>
-          <p className="text-2xl font-bold text-white">
+        <div
+          className="rounded-lg p-4"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <p
+            className="text-sm mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Avg Duration
+          </p>
+          <p
+            className="text-2xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
             {report.avgCallDuration}
           </p>
         </div>
-        <div className="bg-slate-900/50 rounded-xl p-4">
-          <p className="text-gray-400 text-sm mb-1">Trend</p>
-          <p className="text-xl font-bold text-white capitalize">
+        <div
+          className="rounded-lg p-4"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <p
+            className="text-sm mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Trend
+          </p>
+          <p
+            className="text-xl font-bold capitalize"
+            style={{ color: "var(--text-primary)" }}
+          >
             {report.trend}
           </p>
         </div>
       </div>
 
       {/* Skills Chart */}
-      <div className="bg-slate-900/50 rounded-xl p-6 mb-8">
-        <h3 className="text-lg font-semibold text-white mb-4">
+      <div
+        className="rounded-lg p-6 mb-8"
+        style={{
+          background: "var(--background)",
+          border: "1px solid var(--border)",
+        }}
+      >
+        <h3
+          className="text-lg font-semibold mb-4"
+          style={{ color: "var(--text-primary)" }}
+        >
           Skills Breakdown
         </h3>
         <CategoryBarChart
@@ -125,36 +211,69 @@ export default function ReportDetailModal({
 
       {/* Strengths and Improvements */}
       <div className="grid grid-cols-2 gap-6 mb-8">
-        <div className="bg-slate-900/50 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <Award className="w-5 h-5 mr-2 text-green-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-4 flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <Award
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--success, #0caf60)" }}
+            />
             Strengths
           </h3>
           <ul className="space-y-2">
             {report.strengths.map((strength, index) => (
               <li
                 key={index}
-                className="flex items-start text-gray-300 text-sm"
+                className="flex items-start text-sm"
+                style={{ color: "var(--text-secondary)" }}
               >
-                <span className="text-green-400 mr-2">✓</span>
+                <span
+                  style={{ color: "var(--success, #0caf60)" }}
+                  className="mr-2"
+                >
+                  ✓
+                </span>
                 {strength}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="bg-slate-900/50 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-yellow-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "var(--background)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h3
+            className="text-lg font-semibold mb-4 flex items-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            <TrendingUp
+              className="w-5 h-5 mr-2"
+              style={{ color: "var(--accent)" }}
+            />
             Areas for Improvement
           </h3>
           <ul className="space-y-2">
             {report.improvements.map((improvement, index) => (
               <li
                 key={index}
-                className="flex items-start text-gray-300 text-sm"
+                className="flex items-start text-sm"
+                style={{ color: "var(--text-secondary)" }}
               >
-                <span className="text-yellow-400 mr-2">→</span>
+                <span style={{ color: "var(--accent)" }} className="mr-2">
+                  →
+                </span>
                 {improvement}
               </li>
             ))}

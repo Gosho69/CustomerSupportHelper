@@ -26,7 +26,7 @@ export default function UploadCall() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const hasSuccessfulUploads = uploadedFiles.some(
-    (f) => f.status === "success"
+    (f) => f.status === "success",
   );
   const allFilesUploaded =
     uploadedFiles.length > 0 &&
@@ -106,7 +106,7 @@ export default function UploadCall() {
           return { ...f, status: "uploading" };
         }
         return f;
-      })
+      }),
     );
 
     const interval = setInterval(() => {
@@ -127,7 +127,7 @@ export default function UploadCall() {
             };
           }
           return f;
-        })
+        }),
       );
     }, 300);
   };
@@ -166,64 +166,140 @@ export default function UploadCall() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Upload Call Recording</h1>
-        <p className="text-blue-100">
+      <div
+        className="rounded-lg p-8"
+        style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+      >
+        <h1
+          className="text-3xl font-bold mb-2"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Upload Call Recording
+        </h1>
+        <p style={{ color: "var(--text-secondary)" }}>
           Upload your call recordings for AI analysis and performance insights
         </p>
       </div>
 
       {/* Upload Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mb-4">
-            <FileAudio className="w-5 h-5 text-blue-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "#ffffff",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
+            style={{ background: "var(--accent-bg)" }}
+          >
+            <FileAudio className="w-5 h-5" style={{ color: "var(--accent)" }} />
           </div>
-          <p className="text-gray-400 text-sm mb-1">Accepted Formats</p>
-          <p className="text-white font-semibold">MP3, WAV, M4A, OGG</p>
+          <p
+            className="text-sm mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Accepted Formats
+          </p>
+          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>
+            MP3, WAV, M4A, OGG
+          </p>
         </div>
 
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-4">
-            <Clock className="w-5 h-5 text-cyan-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "#ffffff",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
+            style={{ background: "var(--accent-bg)" }}
+          >
+            <Clock className="w-5 h-5" style={{ color: "var(--accent)" }} />
           </div>
-          <p className="text-gray-400 text-sm mb-1">Max File Size</p>
-          <p className="text-white font-semibold">100 MB</p>
+          <p
+            className="text-sm mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Max File Size
+          </p>
+          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>
+            100 MB
+          </p>
         </div>
 
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-          <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mb-4">
-            <CheckCircle className="w-5 h-5 text-green-400" />
+        <div
+          className="rounded-lg p-6"
+          style={{
+            background: "#ffffff",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
+            style={{ background: "var(--accent-bg)" }}
+          >
+            <CheckCircle
+              className="w-5 h-5"
+              style={{ color: "var(--accent)" }}
+            />
           </div>
-          <p className="text-gray-400 text-sm mb-1">Analysis Time</p>
-          <p className="text-white font-semibold">~2-5 minutes</p>
+          <p
+            className="text-sm mb-1"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Analysis Time
+          </p>
+          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>
+            ~2-5 minutes
+          </p>
         </div>
       </div>
 
       {/* Upload Area */}
       {uploadedFiles.length === 0 ? (
         <div
-          className={`bg-slate-800/50 backdrop-blur-md border-2 border-dashed rounded-2xl p-12 transition-all ${
-            isDragging
-              ? "border-blue-500 bg-blue-500/10"
-              : "border-white/10 hover:border-white/20"
+          className={`border-2 border-dashed rounded-lg p-12 transition-all ${
+            isDragging ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"
           }`}
+          style={{
+            background: isDragging ? undefined : "#ffffff",
+            borderColor: isDragging ? undefined : "var(--border)",
+          }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           <div className="flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mb-6">
-              <Upload className="w-10 h-10 text-white" />
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+              style={{ background: "var(--accent-bg)" }}
+            >
+              <Upload
+                className="w-10 h-10"
+                style={{ color: "var(--accent)" }}
+              />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">
+            <h3
+              className="text-2xl font-bold mb-2"
+              style={{ color: "var(--text-primary)" }}
+            >
               Drop your audio files here
             </h3>
-            <p className="text-gray-400 mb-6 max-w-md">
+            <p
+              className="mb-6 max-w-md"
+              style={{ color: "var(--text-secondary)" }}
+            >
               or click to browse from your computer. Supports MP3, WAV, M4A,
               OGG, and WebM formats
             </p>
-            <label className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl font-semibold cursor-pointer transition-all transform hover:scale-105">
+            <label
+              className="px-8 py-3 rounded-lg font-semibold cursor-pointer transition-all transform hover:scale-105"
+              style={{ background: "var(--accent)", color: "#ffffff" }}
+            >
               <input
                 type="file"
                 className="hidden"
@@ -235,13 +311,20 @@ export default function UploadCall() {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-800/50 backdrop-blur-md border-2 border-dashed border-white/10 rounded-2xl p-8">
+        <div
+          className="border-2 border-dashed rounded-lg p-8"
+          style={{ background: "#ffffff", borderColor: "var(--border)" }}
+        >
           {/* File List in Upload Box */}
           <div className="space-y-3 mb-6">
             {uploadedFiles.map((uploadedFile, index) => (
               <div
                 key={index}
-                className="bg-slate-900/50 rounded-xl p-4 border border-white/5"
+                className="rounded-lg p-4"
+                style={{
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3 flex-1">
@@ -250,10 +333,10 @@ export default function UploadCall() {
                         uploadedFile.status === "success"
                           ? "bg-green-500/20"
                           : uploadedFile.status === "error"
-                          ? "bg-red-500/20"
-                          : uploadedFile.status === "uploading"
-                          ? "bg-blue-500/20"
-                          : "bg-gray-500/20"
+                            ? "bg-red-500/20"
+                            : uploadedFile.status === "uploading"
+                              ? "bg-blue-500/20"
+                              : "bg-gray-500/20"
                       }`}
                     >
                       {uploadedFile.status === "success" ? (
@@ -267,10 +350,16 @@ export default function UploadCall() {
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="text-white font-medium truncate">
+                      <p
+                        className="font-medium truncate"
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         {uploadedFile.file.name}
                       </p>
-                      <div className="flex items-center space-x-3 text-sm text-gray-400">
+                      <div
+                        className="flex items-center space-x-3 text-sm"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
                         <span>{formatFileSize(uploadedFile.file.size)}</span>
                         {uploadedFile.status === "success" && (
                           <span className="text-green-400 flex items-center">
@@ -293,17 +382,28 @@ export default function UploadCall() {
                   </div>
                   <button
                     onClick={() => removeFile(uploadedFile.file)}
-                    className="w-8 h-8 bg-slate-800 hover:bg-red-500/20 rounded-lg flex items-center justify-center transition-colors"
+                    className="w-8 h-8 hover:bg-red-50 rounded-lg flex items-center justify-center transition-colors"
+                    style={{
+                      background: "var(--background)",
+                      border: "1px solid var(--border)",
+                    }}
                   >
-                    <X className="w-4 h-4 text-gray-400 hover:text-red-400" />
+                    <X
+                      className="w-4 h-4"
+                      style={{ color: "var(--text-secondary)" }}
+                    />
                   </button>
                 </div>
 
                 {/* Progress Bar */}
                 {uploadedFile.status === "uploading" && (
-                  <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+                      className="h-full transition-all duration-300"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, rgba(237,231,216,1) 0%, rgba(216,205,191,1) 100%)",
+                      }}
                       style={{ width: `${uploadedFile.progress}%` }}
                     />
                   </div>
@@ -314,11 +414,15 @@ export default function UploadCall() {
 
           {/* Analysis Button */}
           {hasSuccessfulUploads && allFilesUploaded && (
-            <div className="pt-4 border-t border-white/10">
+            <div
+              className="pt-4"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
               <button
                 onClick={handleStartAnalysis}
                 disabled={isAnalyzing}
-                className="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all transform hover:scale-105 disabled:transform-none flex items-center justify-center space-x-2"
+                className="w-full px-6 py-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none flex items-center justify-center space-x-2"
+                style={{ background: "var(--accent)", color: "#ffffff" }}
               >
                 {isAnalyzing ? (
                   <>
@@ -339,14 +443,28 @@ export default function UploadCall() {
 
       {/* Tips Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
+        <div
+          className="rounded-lg p-6"
+          style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+        >
           <div className="flex items-start space-x-3">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <CheckCircle className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <CheckCircle
+                className="w-5 h-5"
+                style={{ color: "var(--accent)" }}
+              />
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-2">Best Practices</h4>
-              <ul className="text-gray-400 text-sm space-y-2">
+              <h4
+                className="font-semibold mb-2"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Best Practices
+              </h4>
+              <ul
+                className="text-sm space-y-2"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 <li>• Ensure clear audio quality for accurate analysis</li>
                 <li>• Upload calls within 24 hours for timely feedback</li>
                 <li>• Include complete conversations (intro to outro)</li>
@@ -356,14 +474,31 @@ export default function UploadCall() {
           </div>
         </div>
 
-        <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
+        <div
+          className="rounded-lg p-6"
+          style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+        >
           <div className="flex items-start space-x-3">
-            <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <AlertCircle className="w-5 h-5 text-purple-400" />
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: "var(--accent-bg)" }}
+            >
+              <AlertCircle
+                className="w-5 h-5"
+                style={{ color: "var(--accent)" }}
+              />
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-2">What You'll Get</h4>
-              <ul className="text-gray-400 text-sm space-y-2">
+              <h4
+                className="font-semibold mb-2"
+                style={{ color: "var(--text-primary)" }}
+              >
+                What You'll Get
+              </h4>
+              <ul
+                className="text-sm space-y-2"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 <li>• Emotional sentiment analysis</li>
                 <li>• Behavioral pattern insights</li>
                 <li>• Personalized coaching tips</li>

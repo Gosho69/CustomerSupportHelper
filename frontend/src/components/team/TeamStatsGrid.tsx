@@ -18,25 +18,25 @@ export default function TeamStatsGrid({
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
       <StatsCard
         icon={Users}
-        iconColor="bg-blue-500/20 text-blue-400"
+        iconColor="text-[var(--accent)]"
         label="Total Members"
         value={totalMembers}
       />
       <StatsCard
         icon={Award}
-        iconColor="bg-green-500/20 text-green-400"
+        iconColor="text-[var(--success,#0caf60)]"
         label="Avg Performance"
         value={`${avgPerformance}%`}
       />
       <StatsCard
         icon={Phone}
-        iconColor="bg-cyan-500/20 text-cyan-400"
+        iconColor="text-[var(--accent)]"
         label="Total Calls"
         value={totalCalls}
       />
       <StatsCard
         icon={Users}
-        iconColor="bg-purple-500/20 text-purple-400"
+        iconColor="text-[var(--accent)]"
         label="Active Now"
         value={activeMembers}
       />

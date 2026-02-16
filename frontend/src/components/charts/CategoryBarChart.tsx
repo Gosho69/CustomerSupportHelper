@@ -24,34 +24,35 @@ export default function CategoryBarChart({
   dataKey,
   categoryKey,
   height = 250,
-  color = "#8b5cf6",
+  color = "#635bff",
   layout = "vertical",
 }: CategoryBarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout={layout}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e3e8ee" />
         {layout === "vertical" ? (
           <>
-            <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" />
+            <XAxis type="number" domain={[0, 100]} stroke="#697386" />
             <YAxis
               dataKey={categoryKey}
               type="category"
-              stroke="#94a3b8"
+              stroke="#697386"
               width={120}
             />
           </>
         ) : (
           <>
-            <XAxis dataKey={categoryKey} stroke="#94a3b8" />
-            <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" />
+            <XAxis dataKey={categoryKey} stroke="#697386" />
+            <YAxis type="number" domain={[0, 100]} stroke="#697386" />
           </>
         )}
         <Tooltip
           contentStyle={{
-            backgroundColor: "#1e293b",
-            border: "1px solid #334155",
+            backgroundColor: "#ffffff",
+            border: "1px solid #e3e8ee",
             borderRadius: "8px",
+            color: "#1a1f36",
           }}
         />
         <Bar

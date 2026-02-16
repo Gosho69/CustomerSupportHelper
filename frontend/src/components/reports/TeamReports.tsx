@@ -32,7 +32,7 @@ interface Report {
 export default function TeamReports() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "weekly" | "monthly">(
-    "all"
+    "all",
   );
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
@@ -180,7 +180,7 @@ export default function TeamReports() {
   ];
 
   const avgTeamScore = Math.round(
-    reports.reduce((sum, r) => sum + r.overallScore, 0) / reports.length
+    reports.reduce((sum, r) => sum + r.overallScore, 0) / reports.length,
   );
   const improvingCount = reports.filter((r) => r.trend === "up").length;
   const needAttentionCount = reports.filter((r) => r.trend === "down").length;
@@ -195,33 +195,42 @@ export default function TeamReports() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatsCard
           icon={FileText}
-          iconColor="bg-blue-500/20 text-blue-400"
+          iconColor=""
           label="Total Reports"
           value={reports.length}
         />
         <StatsCard
           icon={Award}
-          iconColor="bg-green-500/20 text-green-400"
+          iconColor=""
           label="Avg Team Score"
           value={`${avgTeamScore}%`}
         />
         <StatsCard
           icon={TrendingUp}
-          iconColor="bg-cyan-500/20 text-cyan-400"
+          iconColor=""
           label="Improving"
           value={improvingCount}
         />
         <StatsCard
           icon={TrendingDown}
-          iconColor="bg-red-500/20 text-red-400"
+          iconColor=""
           label="Need Attention"
           value={needAttentionCount}
         />
       </div>
 
-      <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center">
-          <BarChart3 className="w-5 h-5 mr-2 text-purple-400" />
+      <div
+        className="rounded-lg p-6"
+        style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+      >
+        <h2
+          className="text-xl font-bold mb-6 flex items-center"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <BarChart3
+            className="w-5 h-5 mr-2"
+            style={{ color: "var(--text-secondary)" }}
+          />
           Team Performance Trend
         </h2>
         <TrendLineChart data={teamTrendData} dataKey="avgScore" />
@@ -236,28 +245,66 @@ export default function TeamReports() {
         />
 
         <div className="flex gap-3">
-          <select
-            value={filterType}
-            onChange={(e) =>
-              setFilterType(e.target.value as "all" | "weekly" | "monthly")
-            }
-            className="px-4 py-3 bg-slate-800/50 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="all">All Reports</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
+          <div className="relative">
+            <select
+              value={filterType}
+              onChange={(e) =>
+                setFilterType(e.target.value as "all" | "weekly" | "monthly")
+              }
+              className="px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#635bff] appearance-none cursor-pointer pr-10"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <option value="all">All Reports</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg
+                className="w-5 h-5"
+                style={{ color: "var(--text-secondary)" }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
 
-          <button className="px-6 py-3 bg-slate-700/50 hover:bg-slate-700 text-white rounded-xl font-semibold transition-all flex items-center space-x-2">
+          <button
+            className="px-6 py-3 rounded-lg font-semibold transition-all flex items-center space-x-2"
+            style={{
+              background: "var(--accent-bg)",
+              color: "var(--text-primary)",
+            }}
+          >
             <Download className="w-5 h-5" />
             <span>Export All</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center">
-          <FileText className="w-5 h-5 mr-2 text-purple-400" />
+      <div
+        className="rounded-lg p-6"
+        style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+      >
+        <h2
+          className="text-xl font-bold mb-6 flex items-center"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <FileText
+            className="w-5 h-5 mr-2"
+            style={{ color: "var(--accent)" }}
+          />
           Reports ({filteredReports.length})
         </h2>
 

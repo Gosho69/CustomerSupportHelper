@@ -19,15 +19,19 @@ export default function CompanyModal({
     name: "",
     industry: "",
     address: "",
-    phone: "",
+    phone_number: "",
     purpose: "",
-    employees: 0,
-    status: "active",
   });
 
   useEffect(() => {
     if (company) {
-      setFormData(company);
+      setFormData({
+        name: company.name || "",
+        industry: company.industry || "",
+        address: company.address || "",
+        phone_number: company.phone_number || "",
+        purpose: company.purpose || "",
+      });
     }
   }, [company]);
 
@@ -38,26 +42,32 @@ export default function CompanyModal({
 
   const modalContent = (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/20" onClick={onClose} />
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative bg-slate-800 rounded-2xl p-6 w-full max-w-2xl border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+        className="relative rounded-lg p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+        style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+      >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">
+          <h2
+            className="text-2xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
             {company ? "Edit Company" : "Add New Company"}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-400" />
+            <X className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Company Name *
             </label>
             <input
@@ -67,65 +77,67 @@ export default function CompanyModal({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
               placeholder="Enter company name"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Industry *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.industry}
-                onChange={(e) =>
-                  setFormData({ ...formData, industry: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="e.g., Technology"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Employees *
-              </label>
-              <input
-                type="number"
-                required
-                value={formData.employees}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    employees: parseInt(e.target.value),
-                  })
-                }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Number of employees"
-              />
-            </div>
+          <div>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Industry
+            </label>
+            <input
+              type="text"
+              value={formData.industry}
+              onChange={(e) =>
+                setFormData({ ...formData, industry: e.target.value })
+              }
+              className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+              placeholder="e.g., Technology, Finance, Healthcare"
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Phone Number
             </label>
             <input
               type="tel"
-              value={formData.phone}
+              value={formData.phone_number}
               onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
+                setFormData({ ...formData, phone_number: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
               placeholder="+1 (555) 123-4567"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Address
             </label>
             <input
@@ -134,13 +146,21 @@ export default function CompanyModal({
               onChange={(e) =>
                 setFormData({ ...formData, address: e.target.value })
               }
-              className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
               placeholder="Company address"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Purpose
             </label>
             <textarea
@@ -149,38 +169,33 @@ export default function CompanyModal({
                 setFormData({ ...formData, purpose: e.target.value })
               }
               rows={3}
-              className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
               placeholder="Company purpose or description"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) =>
-                setFormData({ ...formData, status: e.target.value })
-              }
-              className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
           </div>
 
           <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-colors"
+              className="flex-1 px-6 py-3 hover:bg-gray-50 font-semibold rounded-lg transition-colors"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-500/30"
+              className="flex-1 px-6 py-3 font-semibold rounded-lg transition-all shadow-lg flex items-center justify-center"
+              style={{ background: "var(--accent-bg)", color: "var(--accent)" }}
             >
               {company ? "Save Changes" : "Add Company"}
             </button>

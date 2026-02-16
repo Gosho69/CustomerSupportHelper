@@ -33,9 +33,21 @@ export default function CompaniesTable({
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-      <h2 className="text-xl font-bold text-white mb-6 flex items-center">
-        <Building2 className="w-5 h-5 mr-2 text-indigo-400" />
+    <div
+      className="rounded-lg p-6"
+      style={{
+        background: "#ffffff",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <h2
+        className="text-xl font-bold mb-6 flex items-center"
+        style={{ color: "var(--text-primary)" }}
+      >
+        <Building2
+          className="w-5 h-5 mr-2"
+          style={{ color: "var(--text-secondary)" }}
+        />
         All Companies ({companies.length})
       </h2>
 
@@ -43,16 +55,29 @@ export default function CompaniesTable({
         {companies.map((company) => (
           <div
             key={company.id}
-            className="bg-slate-900/50 rounded-xl p-5 hover:bg-slate-900/70 transition-all"
+            className="rounded-lg p-5 transition-all hover:bg-gray-50"
+            style={{
+              background: "#ffffff",
+              border: "1px solid var(--border)",
+            }}
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-start space-x-4 flex-1">
-                <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-6 h-6 text-white" />
+                <div
+                  className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: "var(--accent-bg)" }}
+                >
+                  <Building2
+                    className="w-6 h-6"
+                    style={{ color: "var(--accent)" }}
+                  />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-white font-semibold text-lg">
+                    <h3
+                      className="font-semibold text-lg"
+                      style={{ color: "var(--text-primary)" }}
+                    >
                       {company.name}
                     </h3>
                     <Badge
@@ -62,48 +87,100 @@ export default function CompaniesTable({
                       {company.status}
                     </Badge>
                   </div>
-                  <p className="text-gray-400 text-sm mb-2">
+                  <p
+                    className="text-sm mb-2"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
                     {company.industry}
                   </p>
-                  <p className="text-gray-500 text-sm">{company.purpose}</p>
+                  <p
+                    className="text-sm"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {company.purpose}
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => onEdit(company)}
-                  className="p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                  className="p-2 rounded-lg transition-colors hover:bg-gray-50"
+                  style={{ background: "var(--background)" }}
                 >
-                  <Edit className="w-4 h-4" />
+                  <Edit
+                    className="w-4 h-4"
+                    style={{ color: "var(--text-secondary)" }}
+                  />
                 </button>
                 <button
                   onClick={() => onDelete(company.id)}
-                  className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                  className="p-2 rounded-lg transition-colors hover:bg-gray-50"
+                  style={{ background: "var(--background)" }}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2
+                    className="w-4 h-4"
+                    style={{ color: "var(--text-secondary)" }}
+                  />
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/10">
+            <div
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
               <div>
-                <p className="text-gray-400 text-xs mb-1">Employees</p>
-                <p className="text-white font-semibold flex items-center">
+                <p
+                  className="text-xs mb-1"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Employees
+                </p>
+                <p
+                  className="font-semibold flex items-center"
+                  style={{ color: "var(--text-primary)" }}
+                >
                   <Users className="w-4 h-4 mr-1" />
                   {company.employees}
                 </p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs mb-1">Phone</p>
-                <p className="text-white text-sm">{company.phone}</p>
+                <p
+                  className="text-xs mb-1"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Phone
+                </p>
+                <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+                  {company.phone}
+                </p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs mb-1">Address</p>
-                <p className="text-white text-sm truncate">{company.address}</p>
+                <p
+                  className="text-xs mb-1"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Address
+                </p>
+                <p
+                  className="text-sm truncate"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {company.address}
+                </p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs mb-1">Created</p>
-                <p className="text-white text-sm flex items-center">
+                <p
+                  className="text-xs mb-1"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Created
+                </p>
+                <p
+                  className="text-sm flex items-center"
+                  style={{ color: "var(--text-primary)" }}
+                >
                   <Calendar className="w-4 h-4 mr-1" />
                   {formatDate(company.created_at)}
                 </p>

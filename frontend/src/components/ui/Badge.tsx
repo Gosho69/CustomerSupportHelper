@@ -5,19 +5,19 @@ interface BadgeProps {
   className?: string;
 }
 
-const variantStyles = {
-  blue: "bg-blue-500/20 text-blue-400",
-  purple: "bg-purple-500/20 text-purple-400",
-  green: "bg-green-500/20 text-green-400",
-  yellow: "bg-yellow-500/20 text-yellow-400",
-  red: "bg-red-500/20 text-red-400",
-  gray: "bg-gray-500/20 text-gray-400",
+const variantStyles: Record<string, React.CSSProperties> = {
+  blue: { background: "#dbeafe", color: "#1d4ed8" },
+  purple: { background: "var(--accent-bg)", color: "var(--accent)" },
+  green: { background: "var(--success-bg)", color: "var(--success)" },
+  yellow: { background: "var(--warning-bg)", color: "var(--warning)" },
+  red: { background: "var(--danger-bg)", color: "var(--danger)" },
+  gray: { background: "#f0f2f5", color: "var(--text-secondary)" },
 };
 
 const sizeStyles = {
   sm: "px-2 py-0.5 text-xs",
-  md: "px-3 py-1 text-sm",
-  lg: "px-4 py-1.5 text-base",
+  md: "px-2.5 py-0.5 text-xs",
+  lg: "px-3 py-1 text-sm",
 };
 
 export default function Badge({
@@ -28,7 +28,8 @@ export default function Badge({
 }: BadgeProps) {
   return (
     <span
-      className={`rounded-full font-medium ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`rounded-full font-medium ${sizeStyles[size]} ${className}`}
+      style={variantStyles[variant]}
     >
       {children}
     </span>

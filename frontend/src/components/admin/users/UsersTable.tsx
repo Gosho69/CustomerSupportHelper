@@ -23,12 +23,14 @@ interface User {
 
 interface UsersTableProps {
   users: User[];
+  currentUserId?: number;
   onEdit: (user: User) => void;
   onDelete: (id: number) => void;
 }
 
 export default function UsersTable({
   users,
+  currentUserId,
   onEdit,
   onDelete,
 }: UsersTableProps) {
@@ -57,9 +59,21 @@ export default function UsersTable({
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-      <h2 className="text-xl font-bold text-white mb-6 flex items-center">
-        <Users className="w-5 h-5 mr-2 text-indigo-400" />
+    <div
+      className="rounded-lg p-6"
+      style={{
+        background: "#ffffff",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <h2
+        className="text-xl font-bold mb-6 flex items-center"
+        style={{ color: "var(--text-primary)" }}
+      >
+        <Users
+          className="w-5 h-5 mr-2"
+          style={{ color: "var(--text-secondary)" }}
+        />
         All Users ({users.length})
       </h2>
 
@@ -69,18 +83,31 @@ export default function UsersTable({
           return (
             <div
               key={user.id}
-              className="bg-slate-900/50 rounded-xl p-5 hover:bg-slate-900/70 transition-all"
+              className="rounded-lg p-5 transition-all hover:bg-gray-50"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+              }}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start space-x-4 flex-1">
-                  <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-semibold">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: "var(--accent-bg)" }}
+                  >
+                    <span
+                      className="font-semibold"
+                      style={{ color: "var(--accent)" }}
+                    >
                       {getInitials(user.first_name, user.last_name)}
                     </span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-white font-semibold text-lg">
+                      <h3
+                        className="font-semibold text-lg"
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         {user.first_name} {user.last_name}
                       </h3>
                       <Badge variant={roleBadge.variant} size="sm">
@@ -92,49 +119,106 @@ export default function UsersTable({
                         </Badge>
                       )}
                     </div>
-                    <p className="text-gray-400 text-sm mb-1">
+                    <p
+                      className="text-sm mb-1"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
                       @{user.username}
                     </p>
-                    <p className="text-gray-500 text-sm">{user.email}</p>
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {user.email}
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => onEdit(user)}
-                    className="p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                    className="p-2 rounded-lg transition-colors hover:bg-gray-50"
+                    style={{ background: "var(--background)" }}
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit
+                      className="w-4 h-4"
+                      style={{ color: "var(--text-secondary)" }}
+                    />
                   </button>
                   <button
                     onClick={() => onDelete(user.id)}
-                    className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                    disabled={currentUserId === user.id}
+                    className={`p-2 rounded-lg transition-colors hover:bg-gray-50 ${
+                      currentUserId === user.id
+                        ? "bg-gray-100 cursor-not-allowed opacity-40"
+                        : ""
+                    }`}
+                    title={
+                      currentUserId === user.id
+                        ? "You cannot delete your own account"
+                        : "Delete user"
+                    }
+                    style={
+                      currentUserId === user.id
+                        ? {}
+                        : { background: "var(--background)" }
+                    }
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2
+                      className="w-4 h-4"
+                      style={{ color: "var(--text-secondary)" }}
+                    />
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-white/10">
+              <div
+                className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
                 <div>
-                  <p className="text-gray-400 text-xs mb-1">Company</p>
-                  <p className="text-white text-sm flex items-center">
+                  <p
+                    className="text-xs mb-1"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Company
+                  </p>
+                  <p
+                    className="text-sm flex items-center"
+                    style={{ color: "var(--text-primary)" }}
+                  >
                     <Building2 className="w-4 h-4 mr-1" />
                     {user.company}
                   </p>
                 </div>
                 {user.reporting_to && (
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Reports To</p>
-                    <p className="text-white text-sm flex items-center">
+                    <p
+                      className="text-xs mb-1"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      Reports To
+                    </p>
+                    <p
+                      className="text-sm flex items-center"
+                      style={{ color: "var(--text-primary)" }}
+                    >
                       <UserCheck className="w-4 h-4 mr-1" />
                       {user.reporting_to}
                     </p>
                   </div>
                 )}
                 <div>
-                  <p className="text-gray-400 text-xs mb-1">Joined</p>
-                  <p className="text-white text-sm flex items-center">
+                  <p
+                    className="text-xs mb-1"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Joined
+                  </p>
+                  <p
+                    className="text-sm flex items-center"
+                    style={{ color: "var(--text-primary)" }}
+                  >
                     <Calendar className="w-4 h-4 mr-1" />
                     {formatDate(user.created_at)}
                   </p>

@@ -25,33 +25,43 @@ export default function PerformanceCharts({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Score Trend */}
-      <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-          <TrendingUp className="w-5 h-5 mr-2 text-blue-400" />
+      <div
+        className="rounded-lg p-6"
+        style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+      >
+        <h3
+          className="text-xl font-bold mb-4 flex items-center"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <TrendingUp
+            className="w-5 h-5 mr-2"
+            style={{ color: "var(--accent)" }}
+          />
           Performance Trend
         </h3>
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={performanceData}>
             <defs>
               <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                <stop offset="5%" stopColor="#635bff" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#635bff" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="month" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" domain={[0, 100]} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e3e8ee" />
+            <XAxis dataKey="month" stroke="#697386" />
+            <YAxis stroke="#697386" domain={[0, 100]} />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "1px solid #334155",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e3e8ee",
                 borderRadius: "8px",
+                color: "#1a1f36",
               }}
             />
             <Area
               type="monotone"
               dataKey="score"
-              stroke="#3b82f6"
+              stroke="#635bff"
               fillOpacity={1}
               fill="url(#colorScore)"
             />
@@ -60,29 +70,36 @@ export default function PerformanceCharts({
       </div>
 
       {/* Category Scores */}
-      <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-          <Target className="w-5 h-5 mr-2 text-purple-400" />
+      <div
+        className="rounded-lg p-6"
+        style={{ background: "#ffffff", border: "1px solid var(--border)" }}
+      >
+        <h3
+          className="text-xl font-bold mb-4 flex items-center"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <Target className="w-5 h-5 mr-2" style={{ color: "var(--accent)" }} />
           Skill Categories
         </h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={categoryScores} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e3e8ee" />
+            <XAxis type="number" domain={[0, 100]} stroke="#697386" />
             <YAxis
               dataKey="category"
               type="category"
-              stroke="#94a3b8"
+              stroke="#697386"
               width={120}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "1px solid #334155",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e3e8ee",
                 borderRadius: "8px",
+                color: "#1a1f36",
               }}
             />
-            <Bar dataKey="score" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
+            <Bar dataKey="score" fill="#635bff" radius={[0, 8, 8, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

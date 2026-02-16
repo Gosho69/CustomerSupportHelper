@@ -6,6 +6,7 @@ import CallsStats from "./CallsStats";
 import CallsFilters from "./CallsFilters";
 import CallsTable, { Call } from "./CallsTable";
 import CallDetailModal from "@/components/CallDetailModal";
+import { callsApi } from "@/lib/api";
 
 export default function AgentCallsView() {
   const [calls, setCalls] = useState<Call[]>([]);
@@ -21,49 +22,11 @@ export default function AgentCallsView() {
   const fetchCalls = async () => {
     try {
       setLoading(true);
-      // Mock data for demo - replace with: const response = await api.calls.list();
-
-      const mockCalls: Call[] = [
-        {
-          id: 1,
-          agent_name: "You",
-          call_date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          duration: 456,
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          sentiment: "positive",
-          score: 92,
-        },
-        {
-          id: 2,
-          agent_name: "You",
-          call_date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          duration: 723,
-          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          sentiment: "neutral",
-          score: 85,
-        },
-        {
-          id: 3,
-          agent_name: "You",
-          call_date: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-          duration: 312,
-          created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-          sentiment: "negative",
-          score: 68,
-        },
-        {
-          id: 4,
-          agent_name: "You",
-          call_date: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-          duration: 589,
-          created_at: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-          sentiment: "positive",
-          score: 88,
-        },
-      ];
-      setCalls(mockCalls);
+      const response = await callsApi.getMyCalls();
+      setCalls(response.data || []);
     } catch (error) {
       console.error("Failed to fetch calls:", error);
+      setCalls([]);
     } finally {
       setLoading(false);
     }
@@ -101,13 +64,13 @@ export default function AgentCallsView() {
     avgDuration: formatDuration(
       calls.length > 0
         ? Math.round(
-            calls.reduce((sum, call) => sum + call.duration, 0) / calls.length
+            calls.reduce((sum, call) => sum + call.duration, 0) / calls.length,
           )
-        : 0
+        : 0,
     ),
     today: calls.filter(
       (call) =>
-        new Date(call.call_date).toDateString() === new Date().toDateString()
+        new Date(call.call_date).toDateString() === new Date().toDateString(),
     ).length,
   };
 

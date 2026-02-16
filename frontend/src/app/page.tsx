@@ -18,19 +18,26 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen" style={{ background: "var(--background)" }}>
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10">
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
+        style={{
+          background: "rgba(0,0,0,0.9)",
+          borderBottom: "1px solid rgba(255,255,255,0.03)",
+        }}
+      >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                <Mic className="w-6 h-6 text-white" />
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200"
+                style={{ background: "white" }}
+              >
+                <Mic className="w-6 h-6 text-black" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                AgentSights
-              </span>
+              <span className="text-2xl font-bold text-white">AgentSights</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -71,7 +78,8 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/signup"
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105"
+                className="px-6 py-2.5 rounded-lg transition-all duration-200 font-medium"
+                style={{ background: "white", color: "black" }}
               >
                 Get Started
               </Link>
@@ -133,7 +141,8 @@ export default function LandingPage() {
                 <Link
                   href="/signup"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-3 text-center bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-medium"
+                  className="block px-4 py-3 text-center rounded-lg font-medium"
+                  style={{ background: "white", color: "black" }}
                 >
                   Get Started
                 </Link>
@@ -148,10 +157,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
             Transform Customer Support with
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              {" "}
-              AI-Powered Insights
-            </span>
+            <span style={{ color: "white" }}> AI-Powered Insights</span>
           </h1>
           <p className="text-xl text-gray-300 mb-10 leading-relaxed">
             Record, transcribe, and analyze every customer interaction. Get
@@ -161,7 +167,8 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/signup"
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-semibold text-lg flex items-center justify-center group"
+              className="px-8 py-4 rounded-lg transition font-semibold text-lg flex items-center justify-center group"
+              style={{ background: "white", color: "black" }}
             >
               Start Free Trial
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition" />
@@ -180,42 +187,83 @@ export default function LandingPage() {
 
         {/* Hero Image/Dashboard Preview */}
         <div className="mt-16 max-w-5xl mx-auto">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-white/10 p-8">
-            <div className="bg-slate-950 rounded-lg overflow-hidden">
+          <div
+            className="rounded-2xl border border-white/6 p-8"
+            style={{ background: "var(--muted)" }}
+          >
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{ background: "#070707" }}
+            >
               <div className="flex items-center space-x-2 p-4 bg-slate-900 border-b border-slate-800">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div className="w-3 h-3 rounded-full bg-gray-600"></div>
+                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                <div className="w-3 h-3 rounded-full bg-gray-400"></div>
               </div>
               <div className="p-8 space-y-4">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
-                    <div className="text-blue-400 text-sm">Avg. Score</div>
+                  <div
+                    className="rounded-lg p-4"
+                    style={{
+                      background: "#0B0B0B",
+                      border: "1px solid rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <div style={{ color: "white", fontSize: "0.875rem" }}>
+                      Avg. Score
+                    </div>
                     <div className="text-3xl font-bold text-white">8.5/10</div>
                   </div>
-                  <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
-                    <div className="text-green-400 text-sm">Calls Analyzed</div>
+                  <div
+                    className="rounded-lg p-4"
+                    style={{
+                      background: "#0B0B0B",
+                      border: "1px solid rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <div style={{ color: "white", fontSize: "0.875rem" }}>
+                      Calls Analyzed
+                    </div>
                     <div className="text-3xl font-bold text-white">1,247</div>
                   </div>
-                  <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4">
-                    <div className="text-purple-400 text-sm">Sentiment</div>
+                  <div
+                    className="rounded-lg p-4"
+                    style={{
+                      background: "#0B0B0B",
+                      border: "1px solid rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <div style={{ color: "white", fontSize: "0.875rem" }}>
+                      Sentiment
+                    </div>
                     <div className="text-3xl font-bold text-white">+12%</div>
                   </div>
                 </div>
                 <div className="bg-slate-900 rounded-lg p-6 border border-slate-800">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-gray-400">Recent Call Analysis</span>
-                    <span className="text-blue-400 text-sm">Live</span>
+                    <span style={{ color: "white" }} className="text-sm">
+                      Live
+                    </span>
                   </div>
                   <div className="space-y-2">
                     <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 w-3/4"></div>
+                      <div
+                        className="h-full"
+                        style={{ background: "white", width: "75%" }}
+                      ></div>
                     </div>
                     <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 w-5/6"></div>
+                      <div
+                        className="h-full"
+                        style={{ background: "white", width: "83%" }}
+                      ></div>
                     </div>
                     <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-2/3"></div>
+                      <div
+                        className="h-full"
+                        style={{ background: "white", width: "66%" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -239,8 +287,8 @@ export default function LandingPage() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 hover:bg-white/10 transition">
-            <div className="w-14 h-14 bg-blue-500/20 rounded-lg flex items-center justify-center mb-6">
-              <Mic className="w-7 h-7 text-blue-400" />
+            <div className="w-14 h-14 bg-gray-700/20 rounded-lg flex items-center justify-center mb-6">
+              <Mic className="w-7 h-7" style={{ color: "white" }} />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">
               Smart Recording
@@ -252,8 +300,8 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 hover:bg-white/10 transition">
-            <div className="w-14 h-14 bg-purple-500/20 rounded-lg flex items-center justify-center mb-6">
-              <Zap className="w-7 h-7 text-purple-400" />
+            <div className="w-14 h-14 bg-gray-700/20 rounded-lg flex items-center justify-center mb-6">
+              <Zap className="w-7 h-7" style={{ color: "white" }} />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">
               AI Transcription
@@ -265,8 +313,8 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 hover:bg-white/10 transition">
-            <div className="w-14 h-14 bg-green-500/20 rounded-lg flex items-center justify-center mb-6">
-              <BarChart3 className="w-7 h-7 text-green-400" />
+            <div className="w-14 h-14 bg-gray-700/20 rounded-lg flex items-center justify-center mb-6">
+              <BarChart3 className="w-7 h-7" style={{ color: "white" }} />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">
               Emotion Detection
@@ -278,8 +326,8 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 hover:bg-white/10 transition">
-            <div className="w-14 h-14 bg-cyan-500/20 rounded-lg flex items-center justify-center mb-6">
-              <TrendingUp className="w-7 h-7 text-cyan-400" />
+            <div className="w-14 h-14 bg-gray-700/20 rounded-lg flex items-center justify-center mb-6">
+              <TrendingUp className="w-7 h-7" style={{ color: "white" }} />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">
               Performance Scoring
@@ -291,8 +339,8 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 hover:bg-white/10 transition">
-            <div className="w-14 h-14 bg-orange-500/20 rounded-lg flex items-center justify-center mb-6">
-              <Users className="w-7 h-7 text-orange-400" />
+            <div className="w-14 h-14 bg-gray-700/20 rounded-lg flex items-center justify-center mb-6">
+              <Users className="w-7 h-7" style={{ color: "white" }} />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">AI Coaching</h3>
             <p className="text-gray-400">
@@ -302,8 +350,8 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 hover:bg-white/10 transition">
-            <div className="w-14 h-14 bg-pink-500/20 rounded-lg flex items-center justify-center mb-6">
-              <Shield className="w-7 h-7 text-pink-400" />
+            <div className="w-14 h-14 bg-gray-700/20 rounded-lg flex items-center justify-center mb-6">
+              <Shield className="w-7 h-7" style={{ color: "white" }} />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">
               Smart Reports
@@ -322,14 +370,17 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
             How It Works
           </h2>
-          <p className="text-xl text-gray-400">
+          <p className="text-xl" style={{ color: "white" }}>
             Simple, powerful workflow from recording to insights
           </p>
         </div>
 
         <div className="max-w-4xl mx-auto space-y-12">
           <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-shrink-0 w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+            <div
+              className="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
+              style={{ background: "white", color: "black" }}
+            >
               1
             </div>
             <div className="flex-1">
@@ -345,7 +396,10 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-shrink-0 w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+            <div
+              className="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
+              style={{ background: "white", color: "black" }}
+            >
               2
             </div>
             <div className="flex-1">
@@ -361,7 +415,10 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-shrink-0 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+            <div
+              className="flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
+              style={{ background: "white", color: "black" }}
+            >
               3
             </div>
             <div className="flex-1">
@@ -388,8 +445,14 @@ export default function LandingPage() {
               </h2>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-gray-700/20 rounded-lg flex items-center justify-center">
+                    <div
+                      className="w-2 h-2"
+                      style={{
+                        background: "white",
+                        borderRadius: "9999px",
+                      }}
+                    ></div>
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white mb-2">
@@ -402,8 +465,14 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-gray-700/20 rounded-lg flex items-center justify-center">
+                    <div
+                      className="w-2 h-2"
+                      style={{
+                        background: "white",
+                        borderRadius: "9999px",
+                      }}
+                    ></div>
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white mb-2">
@@ -416,8 +485,14 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-gray-700/20 rounded-lg flex items-center justify-center">
+                    <div
+                      className="w-2 h-2"
+                      style={{
+                        background: "white",
+                        borderRadius: "9999px",
+                      }}
+                    ></div>
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white mb-2">
@@ -431,25 +506,62 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div
+              className="rounded-2xl p-8 border"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(245,239,230,0.02), rgba(0,0,0,0.06))",
+                borderColor: "rgba(245,239,230,0.03)",
+              }}
+            >
               <div className="space-y-6">
-                <div className="bg-slate-900/80 rounded-lg p-6">
-                  <div className="text-gray-400 text-sm mb-2">
+                <div
+                  className="rounded-lg p-6"
+                  style={{
+                    background: "rgba(10,10,10,0.75)",
+                    border: "1px solid rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <div
+                    style={{ color: "white", fontSize: "0.875rem" }}
+                    className="mb-2"
+                  >
                     Average Score Improvement
                   </div>
                   <div className="text-5xl font-bold text-white mb-4">+34%</div>
                   <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-green-500 w-3/4"></div>
+                    <div
+                      className="h-full"
+                      style={{ background: "white", width: "75%" }}
+                    ></div>
                   </div>
                 </div>
-                <div className="bg-slate-900/80 rounded-lg p-6">
-                  <div className="text-gray-400 text-sm mb-2">
+                <div
+                  className="rounded-lg p-6"
+                  style={{
+                    background: "rgba(10,10,10,0.75)",
+                    border: "1px solid rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <div
+                    style={{ color: "white", fontSize: "0.875rem" }}
+                    className="mb-2"
+                  >
                     Calls Analyzed Monthly
                   </div>
                   <div className="text-5xl font-bold text-white">10K+</div>
                 </div>
-                <div className="bg-slate-900/80 rounded-lg p-6">
-                  <div className="text-gray-400 text-sm mb-2">
+                <div
+                  className="rounded-lg p-6"
+                  style={{
+                    background: "rgba(10,10,10,0.75)",
+                    border: "1px solid rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <div
+                    style={{ color: "white", fontSize: "0.875rem" }}
+                    className="mb-2"
+                  >
                     Agent Satisfaction
                   </div>
                   <div className="text-5xl font-bold text-white">4.8/5</div>
@@ -462,18 +574,22 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-6 py-20">
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 md:p-16 text-center">
+        <div
+          className="rounded-3xl p-12 md:p-16 text-center"
+          style={{ background: "var(--muted)" }}
+        >
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Ready to Transform Your Support Team?
           </h2>
-          <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Join hundreds of companies using AI-powered insights to deliver
             exceptional customer experiences.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/signup"
-              className="px-8 py-4 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition font-semibold text-lg"
+              className="px-8 py-4 rounded-lg transition font-semibold text-lg"
+              style={{ background: "white", color: "black" }}
             >
               Start Your Free Trial
             </Link>
@@ -492,8 +608,11 @@ export default function LandingPage() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Mic className="w-5 h-5 text-white" />
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: "white" }}
+              >
+                <Mic className="w-5 h-5 text-black" />
               </div>
               <span className="text-xl font-bold text-white">AgentSights</span>
             </div>

@@ -4,15 +4,18 @@ import { useEffect, useState } from "react";
 import AgentDashboard from "@/components/dashboards/AgentDashboard";
 import HeadOfDepartmentDashboard from "@/components/dashboards/HeadOfDepartmentDashboard";
 import AdminDashboard from "@/components/dashboards/AdminDashboard";
+import { useAuthStore } from "@/store/authStore";
 
 export default function DashboardPage() {
+  const { user } = useAuthStore();
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get role from localStorage (demo mode)
-    const storedRole = localStorage.getItem("demo_role");
-    setUserRole(storedRole || "agent");
-  }, []);
+    // Get role from auth store
+    if (user?.role) {
+      setUserRole(user.role);
+    }
+  }, [user]);
 
   // Don't render anything until role is determined (prevents hydration mismatch)
   if (!userRole) {

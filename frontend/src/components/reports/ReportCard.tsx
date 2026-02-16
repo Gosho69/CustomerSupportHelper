@@ -32,34 +32,62 @@ export default function ReportCard({
   onDownload,
 }: ReportCardProps) {
   const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-green-400";
-    if (score >= 70) return "text-yellow-400";
-    return "text-red-400";
+    return "";
   };
 
   const getTrendIcon = (trend: "up" | "down" | "stable") => {
     switch (trend) {
       case "up":
-        return <TrendingUp className="w-4 h-4 text-green-400" />;
+        return (
+          <TrendingUp
+            className="w-4 h-4"
+            style={{ color: "var(--success, #0caf60)" }}
+          />
+        );
       case "down":
-        return <TrendingDown className="w-4 h-4 text-red-400" />;
+        return (
+          <TrendingDown
+            className="w-4 h-4"
+            style={{ color: "var(--warning, #e68a00)" }}
+          />
+        );
       default:
-        return <div className="w-4 h-4 bg-gray-400 rounded-full" />;
+        return (
+          <div
+            className="w-4 h-4 rounded-full"
+            style={{ background: "var(--text-secondary)" }}
+          />
+        );
     }
   };
 
   return (
-    <div className="bg-slate-900/50 rounded-xl p-5 hover:bg-slate-900/70 transition-all">
+    <div
+      className="rounded-lg p-5 transition-all"
+      style={{
+        background: "#ffffff",
+        border: "1px solid var(--border)",
+      }}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4 flex-1">
-          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center"
+            style={{ background: "var(--accent-bg)" }}
+          >
+            <span
+              style={{ color: "var(--accent)" }}
+              className="font-bold text-lg"
+            >
               {report.agentName.charAt(0)}
             </span>
           </div>
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-1">
-              <p className="text-white font-semibold text-lg">
+              <p
+                className="font-semibold text-lg"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {report.agentName}
               </p>
               <Badge
@@ -69,7 +97,10 @@ export default function ReportCard({
                 {report.type.charAt(0).toUpperCase() + report.type.slice(1)}
               </Badge>
             </div>
-            <div className="flex items-center space-x-4 text-sm text-gray-400">
+            <div
+              className="flex items-center space-x-4 text-sm"
+              style={{ color: "var(--text-secondary)" }}
+            >
               <span className="flex items-center">
                 <Calendar className="w-3 h-3 mr-1" />
                 {report.period}
@@ -81,41 +112,78 @@ export default function ReportCard({
 
         <div className="flex items-center space-x-6">
           <div className="text-center">
-            <p className="text-gray-400 text-xs mb-1">Score</p>
+            <p
+              className="text-xs mb-1"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Score
+            </p>
             <p
               className={`text-2xl font-bold ${getScoreColor(
-                report.overallScore
+                report.overallScore,
               )}`}
+              style={{ color: "var(--text-primary)" }}
             >
               {report.overallScore}%
             </p>
           </div>
           <div className="text-center">
-            <p className="text-gray-400 text-xs mb-1">Calls</p>
-            <p className="text-white font-semibold text-lg">
+            <p
+              className="text-xs mb-1"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Calls
+            </p>
+            <p
+              className="font-semibold text-lg"
+              style={{ color: "var(--text-primary)" }}
+            >
               {report.totalCalls}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-gray-400 text-xs mb-1">Avg Duration</p>
-            <p className="text-white font-semibold">{report.avgCallDuration}</p>
+            <p
+              className="text-xs mb-1"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Avg Duration
+            </p>
+            <p
+              className="font-semibold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {report.avgCallDuration}
+            </p>
           </div>
           <div className="flex flex-col items-center">
-            <p className="text-gray-400 text-xs mb-1">Trend</p>
+            <p
+              className="text-xs mb-1"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Trend
+            </p>
             {getTrendIcon(report.trend)}
           </div>
           <div className="flex space-x-2">
             <button
               onClick={onView}
-              className="p-2 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors"
+              style={{ background: "var(--accent-bg)" }}
             >
-              <Eye className="w-5 h-5 text-purple-400" />
+              <Eye
+                className="w-5 h-5"
+                style={{ color: "var(--text-secondary)" }}
+              />
             </button>
             <button
               onClick={onDownload}
-              className="p-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors"
+              style={{ background: "var(--accent-bg)" }}
             >
-              <Download className="w-5 h-5 text-blue-400" />
+              <Download
+                className="w-5 h-5"
+                style={{ color: "var(--text-secondary)" }}
+              />
             </button>
           </div>
         </div>

@@ -1,20 +1,28 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 // Create axios instance with default config
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
-
+// If there's an access token in localStorage on load, set the default Authorization header
+if (typeof window !== "undefined") {
+  const token = localStorage.getItem("access_token");
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  }
+}
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('access_token');
+    if (typeof window !== "undefined") {
+      // Try to get token from localStorage (set by auth store)
+      const token = localStorage.getItem("access_token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -23,7 +31,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor to handle token refresh
@@ -37,130 +45,141 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = localStorage.getItem("refresh_token");
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/users/token/refresh/`, {
-            refresh: refreshToken,
-          });
+          console.debug("API: 401 received — attempting token refresh");
+          const response = await axios.post(
+            `${API_BASE_URL}/users/token/refresh/`,
+            {
+              refresh: refreshToken,
+            },
+          );
 
           const { access } = response.data;
-          localStorage.setItem('access_token', access);
+          localStorage.setItem("access_token", access);
+
+          // Immediately update axios default header as well
+          api.defaults.headers.common.Authorization = `Bearer ${access}`;
+
+          console.debug("API: refresh successful — retrying original request");
 
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
+        console.debug("API: token refresh failed — clearing auth");
         // Refresh failed, logout user
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // Auth API functions
 export const authApi = {
   login: (username: string, password: string) =>
-    api.post('/users/login/', { username, password }),
-  
-  getCurrentUser: () =>
-    api.get('/users/me/'),
-  
+    api.post("/users/login/", { username, password }),
+
+  getCurrentUser: () => api.get("/users/me/"),
+
   logout: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
   },
 };
 
 // Calls API functions
 export const callsApi = {
   uploadCall: (formData: FormData) =>
-    api.post('/calls/upload/', formData, {
+    api.post("/calls/upload/", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     }),
-  
-  getMyCalls: () =>
-    api.get('/calls/my-calls/'),
-  
-  getCallDetail: (id: number) =>
-    api.get(`/calls/${id}/`),
+
+  getMyCalls: () => api.get("/calls/my-calls/"),
+
+  getCallDetail: (id: number) => api.get(`/calls/${id}/`),
 };
 
 // Reports API functions
 export const reportsApi = {
-  generateReport: (agentId: number, reportType: 'week' | 'month', startDate?: string, endDate?: string) =>
-    api.post('/reports/generate/', {
+  generateReport: (
+    agentId: number,
+    reportType: "week" | "month",
+    startDate?: string,
+    endDate?: string,
+  ) =>
+    api.post("/reports/generate/", {
       agent_id: agentId,
       report_type: reportType,
       start_date: startDate,
       end_date: endDate,
     }),
-  
-  getMyReports: () =>
-    api.get('/reports/my-reports/'),
-  
+
+  getMyReports: () => api.get("/reports/my-reports/"),
+
   getAgentReports: (agentId?: number) =>
-    api.get(`/reports/agent/${agentId || ''}/`),
-  
-  getReportDetail: (reportId: number) =>
-    api.get(`/reports/${reportId}/`),
+    api.get(`/reports/agent/${agentId || ""}/`),
+
+  getReportDetail: (reportId: number) => api.get(`/reports/${reportId}/`),
 };
 
 // Users API functions
 export const usersApi = {
-  getAllUsers: (role?: string) =>
-    api.get('/users/all/', { params: { role } }),
-  
-  getSubordinates: () =>
-    api.get('/users/subordinates/'),
-  
-  createAgent: (data: { username: string; email: string; password: string; first_name?: string; last_name?: string }) =>
-    api.post('/users/create-agent/', data),
-  
-  createHead: (data: { username: string; email: string; password: string; first_name?: string; last_name?: string }) =>
-    api.post('/users/create-head/', data),
-  
-  getUserDetail: (id: number) =>
-    api.get(`/users/${id}/`),
-  
-  updateUser: (id: number, data: any) =>
-    api.patch(`/users/${id}/`, data),
-  
-  deleteUser: (id: number) =>
-    api.delete(`/users/${id}/`),
+  getAllUsers: (role?: string) => api.get("/users/all/", { params: { role } }),
+
+  getSubordinates: () => api.get("/users/subordinates/"),
+
+  createAgent: (data: {
+    username: string;
+    email: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+  }) => api.post("/users/create-agent/", data),
+
+  createHead: (data: {
+    username: string;
+    email: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+  }) => api.post("/users/create-head/", data),
+
+  getUserDetail: (id: number) => api.get(`/users/${id}/`),
+
+  updateUser: (id: number, data: any) => api.patch(`/users/${id}/`, data),
+
+  deleteUser: (id: number) => api.delete(`/users/${id}/`),
 };
 
 // Companies API functions
 export const companiesApi = {
-  getAllCompanies: () =>
-    api.get('/companies/all/'),
-  
+  getAllCompanies: () => api.get("/companies/all/"),
+
   createCompany: (data: { name: string; keywords?: string[] }) =>
-    api.post('/companies/create/', data),
-  
-  getCompanyDetail: (id: number) =>
-    api.get(`/companies/${id}/`),
-  
+    api.post("/companies/create/", data),
+
+  getCompanyDetail: (id: number) => api.get(`/companies/${id}/`),
+
   updateCompany: (id: number, data: any) =>
     api.patch(`/companies/${id}/`, data),
-  
-  deleteCompany: (id: number) =>
-    api.delete(`/companies/${id}/`),
-  
-  getCompanyEmployees: (id: number) =>
-    api.get(`/companies/${id}/employees/`),
-  
+
+  deleteCompany: (id: number) => api.delete(`/companies/${id}/`),
+
+  getCompanyEmployees: (id: number) => api.get(`/companies/${id}/employees/`),
+
   assignHead: (companyId: number, headId: number) =>
-    api.post('/companies/assign-head/', {
+    api.post("/companies/assign-head/", {
       company_id: companyId,
       head_id: headId,
     }),

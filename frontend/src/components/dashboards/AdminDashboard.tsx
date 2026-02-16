@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Building2, Users, Activity, Phone } from "lucide-react";
 import Link from "next/link";
-import { StatsCard } from "@/components/ui";
+import { PageHeader, StatsCard } from "@/components/ui";
+import { usersApi, companiesApi, callsApi } from "@/lib/api";
 
 interface SystemStats {
   totalCompanies: number;
@@ -15,96 +16,155 @@ interface SystemStats {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<SystemStats>({
-    totalCompanies: 12,
-    totalUsers: 89,
-    totalAgents: 64,
-    totalHeads: 12,
-    totalCalls: 1247,
+    totalCompanies: 0,
+    totalUsers: 0,
+    totalAgents: 0,
+    totalHeads: 0,
+    totalCalls: 0,
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+
+        const [companiesRes, usersRes, callsRes] = await Promise.all([
+          companiesApi.getAllCompanies(),
+          usersApi.getAllUsers(),
+          callsApi.getMyCalls(),
+        ]);
+
+        const companies = companiesRes.data;
+        const users = usersRes.data;
+        const calls = callsRes.data;
+
+        const agents = users.filter((u: any) => u.role === "agent").length;
+        const heads = users.filter(
+          (u: any) => u.role === "head_of_department",
+        ).length;
+
+        setStats({
+          totalCompanies: Array.isArray(companies) ? companies.length : 0,
+          totalUsers: Array.isArray(users) ? users.length : 0,
+          totalAgents: agents,
+          totalHeads: heads,
+          totalCalls: Array.isArray(calls) ? calls.length : 0,
+        });
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const cardStyle: React.CSSProperties = {
+    background: "#ffffff",
+    border: "1px solid var(--border, #e3e8ee)",
+    borderRadius: "8px",
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div style={{ color: "var(--text-secondary)" }}>
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">System Overview</h1>
-        <p className="text-gray-400 mt-1">
-          Manage companies, users, and system-wide analytics
-        </p>
-      </div>
+      <PageHeader
+        title="System Overview"
+        subtitle="Manage companies, users, and system-wide analytics"
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatsCard
           icon={Building2}
-          iconColor="bg-indigo-500/20 text-indigo-400"
           label="Companies"
           value={stats.totalCompanies}
         />
-        <StatsCard
-          icon={Users}
-          iconColor="bg-blue-500/20 text-blue-400"
-          label="Total Users"
-          value={stats.totalUsers}
-        />
-        <StatsCard
-          icon={Users}
-          iconColor="bg-green-500/20 text-green-400"
-          label="Agents"
-          value={stats.totalAgents}
-        />
-        <StatsCard
-          icon={Users}
-          iconColor="bg-purple-500/20 text-purple-400"
-          label="Heads"
-          value={stats.totalHeads}
-        />
-        <StatsCard
-          icon={Phone}
-          iconColor="bg-cyan-500/20 text-cyan-400"
-          label="Total Calls"
-          value={stats.totalCalls}
-        />
+        <StatsCard icon={Users} label="Total Users" value={stats.totalUsers} />
+        <StatsCard icon={Users} label="Agents" value={stats.totalAgents} />
+        <StatsCard icon={Users} label="Heads" value={stats.totalHeads} />
+        <StatsCard icon={Phone} label="Total Calls" value={stats.totalCalls} />
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Link
           href="/dashboard/companies"
-          className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
+          className="rounded-lg p-6 hover:shadow-md transition-shadow"
+          style={cardStyle}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Building2 className="w-6 h-6 text-indigo-400" />
+          <div className="flex items-center">
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--accent-bg)" }}
+            >
+              <Building2
+                className="w-6 h-6"
+                style={{ color: "var(--accent)" }}
+              />
             </div>
-            <span className="text-indigo-400 text-sm font-medium">Manage</span>
+            <div className="ml-4">
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Companies
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                View and manage all registered companies
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Companies</h3>
-          <p className="text-gray-400 text-sm">
-            View and manage all registered companies
-          </p>
         </Link>
 
         <Link
           href="/dashboard/users"
-          className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6 hover:bg-slate-800/70 transition-all group"
+          className="rounded-lg p-6 hover:shadow-md transition-shadow"
+          style={cardStyle}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Users className="w-6 h-6 text-blue-400" />
+          <div className="flex items-center">
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--accent-bg)" }}
+            >
+              <Users className="w-6 h-6" style={{ color: "var(--accent)" }} />
             </div>
-            <span className="text-blue-400 text-sm font-medium">Manage</span>
+            <div className="ml-4">
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Users
+              </p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                Manage system users and permissions
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Users</h3>
-          <p className="text-gray-400 text-sm">
-            Manage system users and permissions
-          </p>
         </Link>
       </div>
 
       {/* System Activity */}
-      <div className="bg-slate-800/50 backdrop-blur-md border border-white/10 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center">
-          <Activity className="w-5 h-5 mr-2 text-green-400" />
+      <div className="rounded-lg p-6" style={cardStyle}>
+        <h2
+          className="text-lg font-semibold mb-6 flex items-center"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <Activity
+            className="w-5 h-5 mr-2"
+            style={{ color: "var(--success)" }}
+          />
           Recent System Activity
         </h2>
         <div className="space-y-3">
@@ -127,12 +187,26 @@ export default function AdminDashboard() {
           ].map((activity, index) => (
             <div
               key={index}
-              className="flex items-start space-x-3 p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900/70 transition-colors"
+              className="flex items-start space-x-3 p-4 rounded-lg transition-colors"
+              style={{ background: "var(--background)" }}
             >
-              <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+              <div
+                className="w-2 h-2 rounded-full mt-2"
+                style={{ background: "var(--success)" }}
+              ></div>
               <div className="flex-1">
-                <p className="text-white text-sm mb-1">{activity.message}</p>
-                <p className="text-gray-400 text-xs">{activity.time}</p>
+                <p
+                  className="text-sm mb-1"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {activity.message}
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: "var(--text-tertiary)" }}
+                >
+                  {activity.time}
+                </p>
               </div>
             </div>
           ))}

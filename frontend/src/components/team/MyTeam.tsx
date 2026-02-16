@@ -175,7 +175,7 @@ export default function MyTeam() {
   ];
 
   const avgPerformance = Math.round(
-    teamMembers.reduce((sum, m) => sum + m.avgScore, 0) / teamMembers.length
+    teamMembers.reduce((sum, m) => sum + m.avgScore, 0) / teamMembers.length,
   );
   const totalCalls = teamMembers.reduce((sum, m) => sum + m.totalCalls, 0);
   const activeMembers = teamMembers.filter((m) => m.status === "active").length;
@@ -203,20 +203,43 @@ export default function MyTeam() {
         />
 
         <div className="flex gap-3">
-          <select
-            value={filterStatus}
-            onChange={(e) =>
-              setFilterStatus(
-                e.target.value as "all" | "active" | "on_break" | "offline"
-              )
-            }
-            className="px-4 py-3 bg-slate-800/50 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="on_break">On Break</option>
-            <option value="offline">Offline</option>
-          </select>
+          <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={(e) =>
+                setFilterStatus(
+                  e.target.value as "all" | "active" | "on_break" | "offline",
+                )
+              }
+              className="px-4 py-3 rounded-lg appearance-none cursor-pointer pr-10 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="on_break">On Break</option>
+              <option value="offline">Offline</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg
+                className="w-5 h-5"
+                style={{ color: "var(--text-secondary)" }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
 
           <Button
             onClick={() => setShowAddMember(true)}

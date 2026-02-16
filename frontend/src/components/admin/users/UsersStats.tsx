@@ -20,31 +20,31 @@ export default function UsersStats({
     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
       <StatsCard
         icon={Users}
-        iconColor="bg-indigo-500/20 text-indigo-400"
+        iconColor="bg-[var(--accent-bg)] text-[var(--accent)]"
         label="Total Users"
         value={total}
       />
       <StatsCard
         icon={Shield}
-        iconColor="bg-purple-500/20 text-purple-400"
+        iconColor="bg-[var(--accent-bg)] text-[var(--accent)]"
         label="Admins"
         value={admins}
       />
       <StatsCard
         icon={UserCog}
-        iconColor="bg-blue-500/20 text-blue-400"
+        iconColor="bg-[var(--accent-bg)] text-[var(--accent)]"
         label="Heads"
         value={heads}
       />
       <StatsCard
         icon={Headphones}
-        iconColor="bg-cyan-500/20 text-cyan-400"
+        iconColor="bg-[var(--accent-bg)] text-[var(--accent)]"
         label="Agents"
         value={agents}
       />
       <StatsCard
         icon={CheckCircle}
-        iconColor="bg-green-500/20 text-green-400"
+        iconColor="bg-[var(--accent-bg)] text-[var(--accent)]"
         label="Active"
         value={active}
       />
