@@ -66,6 +66,7 @@ class CreateAdminView(APIView):
                 password=serializer.validated_data['password'],
                 first_name=serializer.validated_data.get('first_name', ''),
                 last_name=serializer.validated_data.get('last_name', ''),
+                phone=serializer.validated_data.get('phone', ''),
                 role='admin',
                 is_staff=True,
                 is_superuser=True
@@ -91,6 +92,7 @@ class CreateHeadOfDepartmentView(APIView):
                 password=serializer.validated_data['password'],
                 first_name=serializer.validated_data.get('first_name', ''),
                 last_name=serializer.validated_data.get('last_name', ''),
+                phone=serializer.validated_data.get('phone', ''),
                 role='head_of_department'
             )
             
@@ -103,20 +105,45 @@ class CreateHeadOfDepartmentView(APIView):
 
 
 class CreateAgentView(APIView):
-    permission_classes = [IsHeadOfDepartment]
+    permission_classes = [IsAdminOrHeadOfDepartment]
     
     def post(self, request):
         serializer = CreateAgentSerializer(data=request.data)
         if serializer.is_valid():
+            # Determine reporting_to: admin provides it explicitly, HoD defaults to self
+            reporting_to_id = request.data.get('reporting_to')
+            if reporting_to_id:
+                try:
+                    reporting_to = MyUser.objects.get(id=reporting_to_id, role='head_of_department')
+                except MyUser.DoesNotExist:
+                    return Response({'error': 'Head of department not found'}, status=status.HTTP_400_BAD_REQUEST)
+            elif request.user.role == 'head_of_department':
+                reporting_to = request.user
+            else:
+                return Response({'error': 'reporting_to is required when admin creates an agent'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Determine company: use explicit value, or fall back to the manager's company
+            company_id = request.data.get('company')
+            company = None
+            if company_id:
+                from company.models import Company
+                try:
+                    company = Company.objects.get(id=company_id)
+                except Company.DoesNotExist:
+                    return Response({'error': 'Company not found'}, status=status.HTTP_400_BAD_REQUEST)
+            elif reporting_to and reporting_to.company:
+                company = reporting_to.company
+            
             agent = MyUser.objects.create_user(
                 username=serializer.validated_data['username'],
                 email=serializer.validated_data['email'],
                 password=serializer.validated_data['password'],
                 first_name=serializer.validated_data.get('first_name', ''),
                 last_name=serializer.validated_data.get('last_name', ''),
+                phone=serializer.validated_data.get('phone', ''),
                 role='agent',
-                reporting_to=request.user,
-                company=request.user.company
+                reporting_to=reporting_to,
+                company=company
             )
             
             return Response({
@@ -162,6 +189,15 @@ class CurrentUserView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def patch(self, request):
+        allowed_fields = ['first_name', 'last_name', 'email', 'phone']
+        update_data = {k: v for k, v in request.data.items() if k in allowed_fields}
+        serializer = UserSerializer(request.user, data=update_data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):

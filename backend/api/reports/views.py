@@ -196,13 +196,19 @@ class MyReportsView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        if request.user.role != 'agent':
+        if request.user.role == 'agent':
+            reports = PerformanceReport.objects.filter(agent=request.user)
+        elif request.user.role == 'head_of_department':
+            subordinates = MyUser.objects.filter(reporting_to=request.user, role='agent')
+            reports = PerformanceReport.objects.filter(agent__in=subordinates)
+        elif request.user.role == 'admin':
+            reports = PerformanceReport.objects.all()
+        else:
             return Response(
-                {'error': 'Only agents can access this endpoint'},
+                {'error': 'Unauthorized'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        reports = PerformanceReport.objects.filter(agent=request.user)
         serializer = ReportListSerializer(reports, many=True)
         
         return Response({

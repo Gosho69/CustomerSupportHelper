@@ -89,6 +89,13 @@ export const authApi = {
 
   getCurrentUser: () => api.get("/users/me/"),
 
+  updateProfile: (data: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+  }) => api.patch("/users/me/", data),
+
   logout: () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -128,7 +135,7 @@ export const reportsApi = {
   getMyReports: () => api.get("/reports/my-reports/"),
 
   getAgentReports: (agentId?: number) =>
-    api.get(`/reports/agent/${agentId || ""}/`),
+    agentId ? api.get(`/reports/agent/${agentId}/`) : api.get("/reports/all/"),
 
   getReportDetail: (reportId: number) => api.get(`/reports/${reportId}/`),
 };

@@ -20,7 +20,11 @@ export default function AgentReports() {
       try {
         setLoading(true);
         const response = await reportsApi.getMyReports();
-        setReports(response.data || []);
+        const rawData = response.data;
+        const reportsArray = Array.isArray(rawData)
+          ? rawData
+          : rawData?.reports || [];
+        setReports(reportsArray);
       } catch (error) {
         console.error("Failed to fetch reports:", error);
         setReports([]);

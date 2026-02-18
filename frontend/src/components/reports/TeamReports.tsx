@@ -33,7 +33,8 @@ export default function TeamReports() {
       try {
         setLoading(true);
         const response = await reportsApi.getAgentReports();
-        const data = response.data || [];
+        const rawData = response.data;
+        const data = Array.isArray(rawData) ? rawData : rawData?.reports || [];
 
         const mapped: Report[] = data.map((r: any) => ({
           id: r.id,

@@ -5,6 +5,7 @@ import { Phone, FileText, Clock, Upload } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui";
 import { callsApi, reportsApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
 interface DashboardStats {
   totalCalls: number;
@@ -13,6 +14,7 @@ interface DashboardStats {
 }
 
 export default function AgentDashboard() {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState<DashboardStats>({
     totalCalls: 0,
     avgDuration: 0,
@@ -30,18 +32,18 @@ export default function AgentDashboard() {
         ]);
 
         const calls = callsRes.data || [];
-        const reports = reportsRes.data || [];
+        const rawReports = reportsRes.data;
+        const reports = Array.isArray(rawReports)
+          ? rawReports
+          : rawReports?.reports || [];
 
         const totalCalls = calls.length;
+        const totalDuration = calls.reduce(
+          (sum: number, c: any) => sum + (c.duration || 0),
+          0,
+        );
         const avgDuration =
-          totalCalls > 0
-            ? Math.round(
-                calls.reduce(
-                  (sum: number, c: any) => sum + (c.duration || 0),
-                  0,
-                ) / totalCalls,
-              )
-            : 0;
+          totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0;
 
         setStats({
           totalCalls,
@@ -84,7 +86,7 @@ export default function AgentDashboard() {
     <div className="space-y-6">
       <div>
         <PageHeader
-          title={`Welcome back, Agent!`}
+          title={`Welcome back, ${user?.first_name || user?.username || "Agent"}!`}
           subtitle={`Here's your performance overview`}
         />
       </div>

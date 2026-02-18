@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Phone } from "lucide-react";
 import { PageHeader, SearchInput, StatsCard, Badge } from "@/components/ui";
-import CallDetailModal from "@/components/CallDetailModal";
+import CallDetailModal from "@/components/call-detail";
 import { callsApi } from "@/lib/api";
 
 interface Call {
@@ -32,8 +32,8 @@ export default function AllCalls() {
         const mapped: Call[] = data.map((call: any) => ({
           id: call.id,
           agentName: call.agent_name || call.agent?.username || "Unknown",
-          callDate: call.uploaded_at
-            ? new Date(call.uploaded_at).toLocaleString()
+          callDate: call.call_date
+            ? new Date(call.call_date).toLocaleString()
             : "",
           duration: call.duration || 0,
           sentiment: call.sentiment || "neutral",
@@ -97,11 +97,16 @@ export default function AllCalls() {
           icon={Phone}
           iconColor="bg-gray-50 text-gray-500"
           label="Avg Duration"
-          value={formatDuration(
-            Math.round(
-              calls.reduce((sum, c) => sum + c.duration, 0) / calls.length,
-            ),
-          )}
+          value={
+            calls.length > 0
+              ? formatDuration(
+                  Math.round(
+                    calls.reduce((sum, c) => sum + c.duration, 0) /
+                      calls.length,
+                  ),
+                )
+              : "0:00"
+          }
         />
       </div>
 

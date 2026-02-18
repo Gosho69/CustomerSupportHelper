@@ -33,6 +33,7 @@ class CreateAdminSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, write_only=True, min_length=8)
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
     
     def validate_username(self, value):
         if MyUser.objects.filter(username=value).exists():
@@ -51,6 +52,7 @@ class CreateHeadOfDepartmentSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, write_only=True, min_length=8)
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
     
     def validate_username(self, value):
         if MyUser.objects.filter(username=value).exists():
@@ -69,6 +71,7 @@ class CreateAgentSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, write_only=True, min_length=8)
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
     
     def validate_username(self, value):
         if MyUser.objects.filter(username=value).exists():

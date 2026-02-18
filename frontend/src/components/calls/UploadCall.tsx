@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Upload,
   File,
@@ -13,7 +14,7 @@ import {
   FileAudio,
 } from "lucide-react";
 import { useToast } from "@/components/ui";
-import { callsApi } from "@/lib/api";
+import { useAnalysisStore } from "@/store/analysisStore";
 
 interface UploadedFile {
   file: File;
@@ -23,10 +24,13 @@ interface UploadedFile {
 }
 
 export default function UploadCall() {
+  const router = useRouter();
   const toast = useToast();
+  const { setFiles, setSummarizationModel } = useAnalysisStore();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<"gpt4" | "local">("gpt4");
 
   const hasSuccessfulUploads = uploadedFiles.some(
     (f) => f.status === "success",
@@ -35,25 +39,26 @@ export default function UploadCall() {
     uploadedFiles.length > 0 &&
     uploadedFiles.every((f) => f.status === "success" || f.status === "error");
 
-  const handleStartAnalysis = async () => {
-    setIsAnalyzing(true);
-    try {
-      const successfulFiles = uploadedFiles.filter(
-        (f) => f.status === "success",
-      );
-      for (const uploadedFile of successfulFiles) {
-        const formData = new FormData();
-        formData.append("audio", uploadedFile.file);
-        await callsApi.uploadCall(formData);
-      }
-      toast.success("Files uploaded! Analysis will begin shortly.");
-      setUploadedFiles([]);
-    } catch (error) {
-      console.error("Upload failed:", error);
-      toast.error("Failed to upload files for analysis.");
-    } finally {
-      setIsAnalyzing(false);
+  const handleStartAnalysis = () => {
+    const successfulFiles = uploadedFiles.filter((f) => f.status === "success");
+
+    if (successfulFiles.length === 0) {
+      toast.error("No files ready for analysis.");
+      return;
     }
+
+    // Store files and model choice, then navigate to the progress page
+    setFiles(
+      successfulFiles.map((f) => ({
+        file: f.file,
+        name: f.file.name,
+        size: f.file.size,
+      })),
+    );
+    setSummarizationModel(selectedModel);
+
+    setUploadedFiles([]);
+    router.push("/dashboard/upload-call/analysis");
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -411,6 +416,95 @@ export default function UploadCall() {
               </div>
             ))}
           </div>
+
+          {/* Model Selector */}
+          {hasSuccessfulUploads && allFilesUploaded && (
+            <div
+              className="mb-4 p-4 rounded-lg"
+              style={{
+                background: "var(--background)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <p
+                className="text-sm font-medium mb-3"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Summarization Model
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setSelectedModel("gpt4")}
+                  className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    selectedModel === "gpt4"
+                      ? "ring-2 shadow-sm"
+                      : "hover:bg-gray-50"
+                  }`}
+                  style={{
+                    background:
+                      selectedModel === "gpt4" ? "var(--accent-bg)" : "#ffffff",
+                    border: `1px solid ${
+                      selectedModel === "gpt4"
+                        ? "var(--accent)"
+                        : "var(--border)"
+                    }`,
+                    color:
+                      selectedModel === "gpt4"
+                        ? "var(--accent)"
+                        : "var(--text-secondary)",
+                    ...(selectedModel === "gpt4"
+                      ? { ringColor: "var(--accent)" }
+                      : {}),
+                  }}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-lg">🤖</span>
+                    <span>OpenAI (GPT-4)</span>
+                  </div>
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: "var(--text-tertiary)" }}
+                  >
+                    Better quality, requires API key
+                  </p>
+                </button>
+                <button
+                  onClick={() => setSelectedModel("local")}
+                  className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    selectedModel === "local"
+                      ? "ring-2 shadow-sm"
+                      : "hover:bg-gray-50"
+                  }`}
+                  style={{
+                    background:
+                      selectedModel === "local"
+                        ? "var(--accent-bg)"
+                        : "#ffffff",
+                    border: `1px solid ${
+                      selectedModel === "local"
+                        ? "var(--accent)"
+                        : "var(--border)"
+                    }`,
+                    color:
+                      selectedModel === "local"
+                        ? "var(--accent)"
+                        : "var(--text-secondary)",
+                  }}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-lg">💻</span>
+                    <span>Local AI</span>
+                  </div>
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: "var(--text-tertiary)" }}
+                  >
+                    Runs locally, no API key needed
+                  </p>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Analysis Button */}
           {hasSuccessfulUploads && allFilesUploaded && (

@@ -76,9 +76,24 @@ class UploadCallView(APIView):
                 topic_analysis=analysis_results['topic_analysis']
             )
             
-            if 'segments' in analysis_results['transcript'] and analysis_results['transcript']['segments']:
-                last_segment = analysis_results['transcript']['segments'][-1]
-                call.duration = int(last_segment.get('end', 0))
+            # Extract duration from transcript
+            duration = 0
+            transcript = analysis_results.get('transcript', {})
+            
+            # First try: duration_sec field from whisperer
+            if 'duration_sec' in transcript:
+                duration = int(transcript['duration_sec'])
+            # Second try: calculate from utterances
+            elif 'utterances' in transcript and transcript['utterances']:
+                last_utterance = max(transcript['utterances'], key=lambda u: u.get('end', 0))
+                duration = int(last_utterance.get('end', 0))
+            # Third try: calculate from segments (legacy support)
+            elif 'segments' in transcript and transcript['segments']:
+                last_segment = transcript['segments'][-1]
+                duration = int(last_segment.get('end', 0))
+            
+            if duration > 0:
+                call.duration = duration
                 call.save()
             
             os.unlink(temp_path)

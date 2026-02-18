@@ -96,7 +96,10 @@ export default function UsersPage() {
     }
   };
 
+  const [savingUser, setSavingUser] = useState(false);
+
   const handleSaveUser = async (userData: any) => {
+    setSavingUser(true);
     try {
       // Convert string values to integers for foreign keys
       const processedData = {
@@ -131,6 +134,8 @@ export default function UsersPage() {
     } catch (error) {
       console.error("Failed to save user:", error);
       toast.error("Failed to save user");
+    } finally {
+      setSavingUser(false);
     }
   };
 
@@ -181,6 +186,7 @@ export default function UsersPage() {
           user={selectedUser}
           onClose={() => setShowModal(false)}
           onSave={handleSaveUser}
+          saving={savingUser}
         />
       )}
 

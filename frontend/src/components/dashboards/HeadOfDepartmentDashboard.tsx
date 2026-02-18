@@ -5,6 +5,7 @@ import { Users, FileText, Phone, Award } from "lucide-react";
 import Link from "next/link";
 import { PageHeader, StatsCard } from "@/components/ui";
 import { usersApi, callsApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
 interface DashboardStats {
   totalTeamMembers: number;
@@ -12,6 +13,7 @@ interface DashboardStats {
 }
 
 export default function HeadOfDepartmentDashboard() {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState<DashboardStats>({
     totalTeamMembers: 0,
     totalTeamCalls: 0,
@@ -63,7 +65,7 @@ export default function HeadOfDepartmentDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Team Performance Overview"
+        title={`Welcome back, ${user?.first_name || user?.username || "Manager"}!`}
         subtitle="Monitor and manage your team's performance"
       />
 

@@ -10,9 +10,15 @@ interface UserModalProps {
   user: any;
   onClose: () => void;
   onSave: (data: any) => void;
+  saving?: boolean;
 }
 
-export default function UserModal({ user, onClose, onSave }: UserModalProps) {
+export default function UserModal({
+  user,
+  onClose,
+  onSave,
+  saving = false,
+}: UserModalProps) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -63,6 +69,16 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // When manager is selected, auto-fill the company field
+  const handleManagerChange = (value: string) => {
+    const selectedHead = heads.find((h) => h.id.toString() === value);
+    const updates: any = { reporting_to: value };
+    if (selectedHead?.company) {
+      updates.company = selectedHead.company.toString();
+    }
+    setFormData((prev) => ({ ...prev, ...updates }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -263,19 +279,26 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
           </div>
 
           <div
-            className={`grid ${formData.role === "admin" ? "grid-cols-1" : "grid-cols-2"} gap-4`}
+            className={`grid ${formData.role === "admin" ? "grid-cols-1" : formData.role === "agent" ? "grid-cols-1" : "grid-cols-2"} gap-4`}
           >
             <CustomSelect
               label="Role"
               required
               options={roleOptions}
               value={formData.role}
-              onChange={(value) => setFormData({ ...formData, role: value })}
+              onChange={(value) =>
+                setFormData({
+                  ...formData,
+                  role: value,
+                  reporting_to: "",
+                  company: "",
+                })
+              }
               placeholder="Select a role"
               searchable={false}
             />
 
-            {formData.role !== "admin" && (
+            {formData.role === "head_of_department" && (
               <CustomSelect
                 label="Company"
                 required
@@ -290,15 +313,30 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
           </div>
 
           {formData.role === "agent" && (
-            <CustomSelect
-              label="Reports To (Head of Department)"
-              options={headOptions}
-              value={formData.reporting_to}
-              onChange={(value) =>
-                setFormData({ ...formData, reporting_to: value })
-              }
-              placeholder="Select a manager (optional)"
-            />
+            <>
+              <CustomSelect
+                label="Manager (Head of Department) *"
+                required
+                options={headOptions}
+                value={formData.reporting_to}
+                onChange={handleManagerChange}
+                placeholder="Select a manager"
+              />
+              <CustomSelect
+                label="Company"
+                required
+                options={companyOptions}
+                value={formData.company}
+                onChange={(value) =>
+                  setFormData({ ...formData, company: value })
+                }
+                placeholder={
+                  formData.reporting_to
+                    ? "Auto-filled from manager"
+                    : "Select manager first"
+                }
+              />
+            </>
           )}
 
           <div className="flex items-center gap-3 py-2">
@@ -324,7 +362,8 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 hover:bg-gray-50 font-semibold rounded-lg transition-colors"
+              disabled={saving}
+              className="flex-1 px-6 py-3 hover:bg-gray-50 font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: "#ffffff",
                 border: "1px solid var(--border)",
@@ -335,10 +374,39 @@ export default function UserModal({ user, onClose, onSave }: UserModalProps) {
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 font-semibold rounded-lg transition-all shadow-lg flex items-center justify-center"
+              disabled={saving}
+              className="flex-1 px-6 py-3 font-semibold rounded-lg transition-all shadow-lg flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ background: "var(--accent-bg)", color: "var(--accent)" }}
             >
-              {user ? "Save Changes" : "Add User"}
+              {saving ? (
+                <>
+                  <svg
+                    className="animate-spin h-4 w-4 mr-2"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : user ? (
+                "Save Changes"
+              ) : (
+                "Add User"
+              )}
             </button>
           </div>
         </form>

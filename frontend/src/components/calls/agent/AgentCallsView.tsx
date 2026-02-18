@@ -5,7 +5,7 @@ import CallsHeader from "./CallsHeader";
 import CallsStats from "./CallsStats";
 import CallsFilters from "./CallsFilters";
 import CallsTable, { Call } from "./CallsTable";
-import CallDetailModal from "@/components/CallDetailModal";
+import CallDetailModal from "@/components/call-detail";
 import { callsApi } from "@/lib/api";
 
 export default function AgentCallsView() {
