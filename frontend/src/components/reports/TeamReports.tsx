@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { FileText } from "lucide-react";
 import { PageHeader, SearchInput, StatsCard } from "@/components/ui";
 import { ReportCard, ReportDetailModal } from "@/components/reports";
-import { reportsApi } from "@/lib/api";
+import { reportsApi, callsApi } from "@/lib/api";
 
 interface Report {
   id: number;
@@ -78,7 +78,7 @@ function mapReport(r: any): Report {
           day: "numeric",
         })
       : "",
-    overallScore: Math.round(r.average_behavioral_score ?? 0),
+    overallScore: Math.round((r.average_behavioral_score ?? 0) * 100),
     totalCalls: r.total_calls ?? 0,
     avgCallDuration: formatDuration(r.average_call_duration),
     trend: mapTrend(r.behavioral_trend),
@@ -96,6 +96,7 @@ export default function TeamReports() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
+  const [callsAvgScore, setCallsAvgScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -103,10 +104,30 @@ export default function TeamReports() {
     const fetchReports = async () => {
       try {
         setLoading(true);
-        const response = await reportsApi.getAgentReports();
-        const rawData = response.data;
+        const [reportsRes, callsRes] = await Promise.all([
+          reportsApi.getAgentReports(),
+          callsApi.getMyCalls(),
+        ]);
+        const rawData = reportsRes.data;
         const data = Array.isArray(rawData) ? rawData : rawData?.reports || [];
         setReports(data.map(mapReport));
+
+        // Fallback avg score from call-level behavioral_score
+        const calls: any[] = callsRes.data || [];
+        const scored = calls.filter(
+          (c) =>
+            c.behavioral_score != null && !isNaN(Number(c.behavioral_score)),
+        );
+        if (scored.length > 0) {
+          setCallsAvgScore(
+            Math.round(
+              scored.reduce(
+                (s: number, c: any) => s + Number(c.behavioral_score),
+                0,
+              ) / scored.length,
+            ),
+          );
+        }
       } catch (error) {
         console.error("Failed to fetch reports:", error);
       } finally {
@@ -166,11 +187,17 @@ export default function TeamReports() {
           icon={FileText}
           iconColor=""
           label="Avg Team Score"
-          value={
-            reports.length > 0
-              ? `${Math.round(reports.reduce((sum, r) => sum + r.overallScore, 0) / reports.length)}%`
-              : "N/A"
-          }
+          value={(() => {
+            if (reports.length > 0) {
+              const avg = Math.round(
+                reports.reduce((sum, r) => sum + r.overallScore, 0) /
+                  reports.length,
+              );
+              return `${avg}%`;
+            }
+            if (callsAvgScore != null) return `${callsAvgScore}%`;
+            return "N/A";
+          })()}
         />
       </div>
 

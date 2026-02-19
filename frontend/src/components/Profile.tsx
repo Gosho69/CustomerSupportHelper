@@ -58,6 +58,7 @@ export default function Profile() {
         ? rawReports
         : rawReports?.reports || [];
 
+      // ── Stats ──────────────────────────────────────────────────
       const totalCalls = calls.length;
       const totalDuration = calls.reduce(
         (sum: number, call: any) => sum + (call.duration || 0),
@@ -65,19 +66,59 @@ export default function Profile() {
       );
       const totalHours = Math.round(totalDuration / 3600);
 
-      const scores = reports
+      // avg score: prefer report scores, fall back to call behavioral_score
+      const reportScores = reports
         .filter((r: any) => r.metrics?.overall_score)
-        .map((r: any) => r.metrics.overall_score);
+        .map((r: any) => r.metrics.overall_score as number);
+      const callScores = calls
+        .filter((c: any) => c.behavioral_score != null)
+        .map((c: any) => Number(c.behavioral_score));
+      const scoreSource = reportScores.length > 0 ? reportScores : callScores;
       const avgScore =
-        scores.length > 0
+        scoreSource.length > 0
           ? Math.round(
-              scores.reduce((a: number, b: number) => a + b, 0) / scores.length,
+              scoreSource.reduce((a: number, b: number) => a + b, 0) /
+                scoreSource.length,
             )
           : 0;
 
       setStats({ totalCalls, avgScore, totalHours });
 
-      if (reports.length > 0 && reports[0].metrics) {
+      // ── Skill Assessment ───────────────────────────────────────
+      // Primary: average skill_scores across all calls that have the breakdown
+      const callsWithSkills = calls.filter((c: any) => c.skill_scores != null);
+      if (callsWithSkills.length > 0) {
+        const keys = [
+          "active_listening",
+          "pacing",
+          "communication",
+          "response_time",
+          "engagement",
+          "composure",
+        ] as const;
+        const labels: Record<string, string> = {
+          active_listening: "Active Listening",
+          pacing: "Pacing",
+          communication: "Communication",
+          response_time: "Response Time",
+          engagement: "Engagement",
+          composure: "Composure",
+        };
+        const averages = keys.map((k) => {
+          const vals = callsWithSkills
+            .map((c: any) => c.skill_scores[k] as number)
+            .filter((v: number) => v != null);
+          const avg =
+            vals.length > 0
+              ? Math.round(
+                  vals.reduce((a: number, b: number) => a + b, 0) / vals.length,
+                )
+              : 0;
+          return { skill: labels[k], score: avg };
+        });
+        setSkillData(averages);
+      } else if (reports.length > 0 && reports[0].metrics) {
+        // Fallback: derive from the latest report's metrics
         const metrics = reports[0].metrics;
         setSkillData([
           {
@@ -107,41 +148,59 @@ export default function Profile() {
         ]);
       }
 
-      const monthlyData: any = {};
+      // ── Monthly Activity ───────────────────────────────────────
+      // Group calls by month; use behavioral_score for the score line
+      const monthlyData: Record<
+        string,
+        { month: string; calls: number; scoreSum: number; scoreCount: number }
+      > = {};
+
       calls.forEach((call: any) => {
-        const date = new Date(call.created_at);
-        const monthKey = date.toLocaleDateString("en-US", { month: "short" });
+        const date = new Date(call.call_date || call.created_at);
+        // Use sortable ISO key "YYYY-MM" so we can sort chronologically
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
         if (!monthlyData[monthKey]) {
           monthlyData[monthKey] = {
-            month: monthKey,
+            month: date.toLocaleDateString("en-US", { month: "short" }),
             calls: 0,
-            score: 0,
+            scoreSum: 0,
             scoreCount: 0,
           };
         }
         monthlyData[monthKey].calls++;
-      });
-
-      reports.forEach((report: any) => {
-        const date = new Date(report.created_at);
-        const monthKey = date.toLocaleDateString("en-US", { month: "short" });
-        if (monthlyData[monthKey] && report.metrics?.overall_score) {
-          monthlyData[monthKey].score += report.metrics.overall_score;
+        if (call.behavioral_score != null) {
+          monthlyData[monthKey].scoreSum += Number(call.behavioral_score);
           monthlyData[monthKey].scoreCount++;
         }
       });
 
-      const activityData = Object.values(monthlyData).map((data: any) => ({
-        month: data.month,
-        calls: data.calls,
-        score:
-          data.scoreCount > 0 ? Math.round(data.score / data.scoreCount) : 0,
-      }));
+      // Enrich with report overall_score where available
+      reports.forEach((report: any) => {
+        if (!report.metrics?.overall_score) return;
+        const date = new Date(report.created_at);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        if (monthlyData[monthKey]) {
+          monthlyData[monthKey].scoreSum += report.metrics.overall_score;
+          monthlyData[monthKey].scoreCount++;
+        }
+      });
+
+      // Sort chronologically (ISO keys sort correctly as strings)
+      const sortedMonthKeys = Object.keys(monthlyData).sort();
+
+      const activityData = sortedMonthKeys.map((key) => {
+        const d = monthlyData[key];
+        return {
+          month: d.month,
+          calls: d.calls,
+          score: d.scoreCount > 0 ? Math.round(d.scoreSum / d.scoreCount) : 0,
+        };
+      });
 
       setMonthlyActivity(activityData.slice(-6));
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching profile data:", error);
+    } finally {
       setLoading(false);
     }
   };
@@ -237,6 +296,7 @@ export default function Profile() {
           stats={stats}
           skillData={skillData}
           monthlyActivity={monthlyActivity}
+          loading={loading}
         />
       )}
     </div>

@@ -20,6 +20,7 @@ interface PerformanceStatsProps {
   stats: { totalCalls: number; avgScore: number; totalHours: number };
   skillData: any[];
   monthlyActivity: any[];
+  loading?: boolean;
 }
 
 const cardStyle: React.CSSProperties = {
@@ -28,11 +29,51 @@ const cardStyle: React.CSSProperties = {
   borderRadius: "8px",
 };
 
+function Skeleton({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse rounded ${className}`}
+      style={{ background: "var(--border, #e3e8ee)" }}
+    />
+  );
+}
+
 export default function PerformanceStats({
   stats,
   skillData,
   monthlyActivity,
+  loading = false,
 }: PerformanceStatsProps) {
+  if (loading) {
+    return (
+      <>
+        {/* Stat card skeletons */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-lg p-6" style={cardStyle}>
+              <Skeleton className="w-10 h-10 mb-4" />
+              <Skeleton className="h-3 w-20 mb-2" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          ))}
+        </div>
+
+        {/* Chart skeletons */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[0, 1].map((i) => (
+            <div key={i} className="rounded-lg p-6" style={cardStyle}>
+              <div className="flex items-center gap-2 mb-4">
+                <Skeleton className="w-5 h-5" />
+                <Skeleton className="h-5 w-36" />
+              </div>
+              <Skeleton className="w-full h-[300px]" />
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Stat Cards */}

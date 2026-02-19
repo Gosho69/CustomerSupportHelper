@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/authStore";
 interface DashboardStats {
   totalTeamMembers: number;
   totalTeamCalls: number;
+  avgTeamScore: number | null;
 }
 
 export default function HeadOfDepartmentDashboard() {
@@ -17,6 +18,7 @@ export default function HeadOfDepartmentDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalTeamMembers: 0,
     totalTeamCalls: 0,
+    avgTeamScore: null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -32,9 +34,24 @@ export default function HeadOfDepartmentDashboard() {
         const subordinates = subordinatesRes.data || [];
         const calls = callsRes.data || [];
 
+        const scoredCalls = calls.filter(
+          (c: any) =>
+            c.behavioral_score != null && !isNaN(Number(c.behavioral_score)),
+        );
+        const avgTeamScore =
+          scoredCalls.length > 0
+            ? Math.round(
+                scoredCalls.reduce(
+                  (sum: number, c: any) => sum + Number(c.behavioral_score),
+                  0,
+                ) / scoredCalls.length,
+              )
+            : null;
+
         setStats({
           totalTeamMembers: subordinates.length,
           totalTeamCalls: calls.length,
+          avgTeamScore,
         });
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -70,7 +87,7 @@ export default function HeadOfDepartmentDashboard() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard
           icon={Users}
           label="Team Members"
@@ -80,6 +97,13 @@ export default function HeadOfDepartmentDashboard() {
           icon={Phone}
           label="Total Calls"
           value={stats.totalTeamCalls}
+        />
+        <StatsCard
+          icon={Award}
+          label="Avg Team Score"
+          value={
+            stats.avgTeamScore != null ? `${stats.avgTeamScore}/100` : "N/A"
+          }
         />
       </div>
 

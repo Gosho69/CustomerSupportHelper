@@ -116,26 +116,78 @@ export default function MyTeam() {
               ? rawReportData
               : rawReportData?.reports || [];
             const latestReport = reports[0];
-            const rawTrend = latestReport?.behavioral_trend || "stable";
-            const trend: "up" | "down" | "stable" =
-              rawTrend === "improving"
-                ? "up"
-                : rawTrend === "declining"
-                  ? "down"
-                  : "stable";
 
-            // Build performance chart data from reports (score is 0-1, convert to 0-100)
-            const performanceData = reports
-              .filter((r: any) => r.average_behavioral_score != null)
-              .slice(0, 6)
-              .reverse()
-              .map((r: any) => ({
-                month: new Date(r.start_date).toLocaleDateString("en-US", {
+            // ── Trend: compute from calls' behavioral_score if available ──
+            let trend: "up" | "down" | "stable" = "stable";
+            if (scoredCalls.length >= 2) {
+              // Sort oldest→newest
+              const sorted = [...scoredCalls].sort(
+                (a, b) =>
+                  new Date(a.call_date || a.created_at).getTime() -
+                  new Date(b.call_date || b.created_at).getTime(),
+              );
+              const half = Math.ceil(sorted.length / 2);
+              const older = sorted.slice(0, half);
+              const newer = sorted.slice(half);
+              const avgOlder =
+                older.reduce((s, c) => s + (c.behavioral_score ?? 0), 0) /
+                older.length;
+              const avgNewer =
+                newer.reduce((s, c) => s + (c.behavioral_score ?? 0), 0) /
+                newer.length;
+              const diff = avgNewer - avgOlder;
+              if (diff >= 3) trend = "up";
+              else if (diff <= -3) trend = "down";
+              else trend = "stable";
+            } else if (latestReport?.behavioral_trend) {
+              const rawTrend = latestReport.behavioral_trend;
+              trend =
+                rawTrend === "improving"
+                  ? "up"
+                  : rawTrend === "declining"
+                    ? "down"
+                    : "stable";
+            }
+
+            // ── Performance history: group calls by month ──
+            let performanceData: { month: string; score: number }[] = [];
+            if (scoredCalls.length > 0) {
+              const byMonth: Record<
+                string,
+                { label: string; sum: number; count: number }
+              > = {};
+              for (const c of scoredCalls) {
+                const d = new Date(c.call_date || c.created_at);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                const label = d.toLocaleDateString("en-US", {
                   month: "short",
                   year: "2-digit",
-                }),
-                score: Math.round((r.average_behavioral_score ?? 0) * 100),
-              }));
+                });
+                if (!byMonth[key]) byMonth[key] = { label, sum: 0, count: 0 };
+                byMonth[key].sum += c.behavioral_score ?? 0;
+                byMonth[key].count++;
+              }
+              performanceData = Object.keys(byMonth)
+                .sort()
+                .slice(-6)
+                .map((k) => ({
+                  month: byMonth[k].label,
+                  score: Math.round(byMonth[k].sum / byMonth[k].count),
+                }));
+            } else {
+              // Fallback: use reports (score is 0-1, convert to 0-100)
+              performanceData = reports
+                .filter((r: any) => r.average_behavioral_score != null)
+                .slice(0, 6)
+                .reverse()
+                .map((r: any) => ({
+                  month: new Date(r.start_date).toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "2-digit",
+                  }),
+                  score: Math.round((r.average_behavioral_score ?? 0) * 100),
+                }));
+            }
 
             return {
               id: user.id,
