@@ -56,10 +56,11 @@ class UploadCallView(APIView):
             analysis_results = analyze_call(
                 audio_path=temp_path,
                 summarization_model=summarization_model,
-                whisper_model_size="base",
+                whisper_model_size="small",
                 device="cpu",
                 compute_type="int8",
                 local_model_path=local_model_path,
+                gpt4_max_tokens=1500,
                 custom_keywords=custom_keywords
             )
             

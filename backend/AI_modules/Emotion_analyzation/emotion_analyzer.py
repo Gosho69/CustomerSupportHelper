@@ -19,8 +19,8 @@ class EmotionAnalyzer:
         "joy": "happy",
         "sadness": "sad",
         "disgust": "frustrated",
-        "fear": "confused",
-        "surprise": "confused",
+        "fear": "fearful",
+        "surprise": "surprised",
         "neutral": "neutral"
     }
     

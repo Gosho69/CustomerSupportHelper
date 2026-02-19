@@ -26,7 +26,7 @@ export default function HeadOfDepartmentDashboard() {
         setLoading(true);
         const [subordinatesRes, callsRes] = await Promise.all([
           usersApi.getSubordinates(),
-          callsApi.getMyCalls(),
+          callsApi.getMyCalls(), // For HoD, this returns all subordinates' calls
         ]);
 
         const subordinates = subordinatesRes.data || [];

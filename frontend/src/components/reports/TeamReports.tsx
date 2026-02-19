@@ -22,11 +22,82 @@ interface Report {
   topSkills: { skill: string; score: number }[];
 }
 
+function formatDuration(seconds: number | null | undefined): string {
+  if (!seconds || seconds <= 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function mapTrend(raw: string | null | undefined): "up" | "down" | "stable" {
+  if (raw === "improving") return "up";
+  if (raw === "declining") return "down";
+  return "stable";
+}
+
+function mapReport(r: any): Report {
+  const startDate = r.start_date
+    ? new Date(r.start_date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+  const endDate = r.end_date
+    ? new Date(r.end_date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+
+  const topSkills: { skill: string; score: number }[] = [];
+  if (r.empathy_score != null)
+    topSkills.push({ skill: "Empathy", score: Math.round(r.empathy_score) });
+  if (r.professionalism_score != null)
+    topSkills.push({
+      skill: "Professionalism",
+      score: Math.round(r.professionalism_score),
+    });
+  if (r.problem_solving_score != null)
+    topSkills.push({
+      skill: "Problem Solving",
+      score: Math.round(r.problem_solving_score),
+    });
+
+  return {
+    id: r.id,
+    agentName: r.agent_name || r.agent_username || "Unknown",
+    agentEmail: r.agent_email || r.agent_username || "",
+    type: (r.report_type as "weekly" | "monthly") || "weekly",
+    period: startDate && endDate ? `${startDate} – ${endDate}` : startDate,
+    date: r.generated_at
+      ? new Date(r.generated_at).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "",
+    overallScore: Math.round(r.average_behavioral_score ?? 0),
+    totalCalls: r.total_calls ?? 0,
+    avgCallDuration: formatDuration(r.average_call_duration),
+    trend: mapTrend(r.behavioral_trend),
+    strengths: Array.isArray(r.strengths) ? r.strengths : [],
+    improvements: Array.isArray(r.weaknesses)
+      ? r.weaknesses
+      : Array.isArray(r.recommendations)
+        ? r.recommendations
+        : [],
+    topSkills,
+  };
+}
+
 export default function TeamReports() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -35,24 +106,7 @@ export default function TeamReports() {
         const response = await reportsApi.getAgentReports();
         const rawData = response.data;
         const data = Array.isArray(rawData) ? rawData : rawData?.reports || [];
-
-        const mapped: Report[] = data.map((r: any) => ({
-          id: r.id,
-          agentName: r.agent_name || r.agent?.username || "Unknown",
-          agentEmail: r.agent_email || r.agent?.email || "",
-          type: r.type || "weekly",
-          period: r.period || "",
-          date: r.created_at ? new Date(r.created_at).toLocaleDateString() : "",
-          overallScore: r.overall_score || 0,
-          totalCalls: r.total_calls || 0,
-          avgCallDuration: r.avg_call_duration || "0:00",
-          trend: r.trend || "stable",
-          strengths: r.strengths || [],
-          improvements: r.improvements || [],
-          topSkills: r.top_skills || [],
-        }));
-
-        setReports(mapped);
+        setReports(data.map(mapReport));
       } catch (error) {
         console.error("Failed to fetch reports:", error);
       } finally {
@@ -62,6 +116,22 @@ export default function TeamReports() {
 
     fetchReports();
   }, []);
+
+  // Fetch full report detail (with all fields) when user clicks View
+  const handleViewReport = async (reportId: number) => {
+    try {
+      setLoadingDetail(true);
+      const response = await reportsApi.getReportDetail(reportId);
+      setSelectedReport(mapReport(response.data));
+    } catch (error) {
+      console.error("Failed to fetch report detail:", error);
+      // Fallback to list data
+      const fallback = reports.find((r) => r.id === reportId) || null;
+      setSelectedReport(fallback);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
@@ -128,12 +198,21 @@ export default function TeamReports() {
           Reports ({filteredReports.length})
         </h2>
 
+        {loadingDetail && (
+          <div
+            className="text-center py-4"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Loading report details...
+          </div>
+        )}
+
         <div className="space-y-3">
           {filteredReports.map((report) => (
             <ReportCard
               key={report.id}
               report={report}
-              onView={() => setSelectedReport(report)}
+              onView={() => handleViewReport(report.id)}
             />
           ))}
         </div>

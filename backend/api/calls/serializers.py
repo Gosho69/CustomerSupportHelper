@@ -78,16 +78,24 @@ class CallSerializer(serializers.ModelSerializer):
 
 class CallListSerializer(serializers.ModelSerializer):
     agent_name = serializers.SerializerMethodField()
+    behavioral_score = serializers.SerializerMethodField()
     
     class Meta:
         model = Call
         fields = [
             'id',
+            'agent',
             'agent_name',
             'call_date',
             'duration',
+            'behavioral_score',
             'created_at'
         ]
     
     def get_agent_name(self, obj):
         return f"{obj.agent.first_name} {obj.agent.last_name}".strip() or obj.agent.username
+    
+    def get_behavioral_score(self, obj):
+        if obj.behavioral_analysis:
+            return obj.behavioral_analysis.get('behavioral_score', None)
+        return None

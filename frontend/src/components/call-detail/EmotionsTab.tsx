@@ -27,6 +27,10 @@ const getEmotionIcon = (emotion: string) => {
     case "frustrated":
     case "angry":
       return <AlertCircle className="w-5 h-5" style={{ color: "#e68a00" }} />;
+    case "fearful":
+      return <AlertCircle className="w-5 h-5" style={{ color: "#f59e0b" }} />;
+    case "surprised":
+      return <Meh className="w-5 h-5" style={{ color: "#8b5cf6" }} />;
     default:
       return (
         <Meh className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />

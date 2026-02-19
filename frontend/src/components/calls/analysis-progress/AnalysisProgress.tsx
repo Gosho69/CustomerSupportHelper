@@ -149,7 +149,7 @@ export default function AnalysisProgress() {
     };
   }, [files, fileStates.length, advanceSteps, completeFile, failFile]);
 
-  // Auto-open CallDetailModal when a single file completes and auto-close when analysis is done
+  // Auto-open CallDetailModal when a single file completes
   useEffect(() => {
     const completedFiles = fileStates.filter(
       (f) => f.status === "completed" && f.callId,
@@ -165,12 +165,13 @@ export default function AnalysisProgress() {
     }
   }, [fileStates, viewingCallId]);
 
-  // Auto-return to upload page when analysis is complete
-  useEffect(() => {
+  // When the modal is closed after analysis is complete, return to upload page
+  const handleModalClose = () => {
+    setViewingCallId(null);
     if (overallStatus === "completed") {
       handleBackToUpload();
     }
-  }, [overallStatus]);
+  };
 
   const handleBackToUpload = () => {
     clearFiles();
@@ -317,10 +318,7 @@ export default function AnalysisProgress() {
 
       {/* Call Detail Modal */}
       {viewingCallId && (
-        <CallDetailModal
-          callId={viewingCallId}
-          onClose={() => setViewingCallId(null)}
-        />
+        <CallDetailModal callId={viewingCallId} onClose={handleModalClose} />
       )}
     </div>
   );

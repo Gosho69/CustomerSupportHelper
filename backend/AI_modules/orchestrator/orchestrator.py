@@ -13,6 +13,72 @@ from coaching_tips.coaching_tips import generate
 from topic_analyzer.topic_analyzer import analyze_topics
 
 
+# Maps local model customer_tone labels to standardized emotion summary fields
+_TONE_TO_SATISFACTION = {
+    "positive": "very_satisfied",
+    "satisfied": "satisfied",
+    "neutral": "neutral",
+    "frustrated": "dissatisfied",
+    "negative": "dissatisfied",
+    "angry": "very_dissatisfied",
+}
+
+_TONE_TO_CALL_TONE = {
+    "positive": "positive",
+    "satisfied": "positive",
+    "neutral": "neutral",
+    "frustrated": "negative",
+    "negative": "negative",
+    "angry": "negative",
+}
+
+_TONE_TO_RESOLUTION = {
+    "positive": "resolved",
+    "satisfied": "resolved",
+    "neutral": "pending",
+    "frustrated": "unresolved",
+    "negative": "unresolved",
+    "angry": "unresolved",
+}
+
+_AGENT_TONE_TO_EMPATHY = {
+    "empathetic": 0.85,
+    "apologetic": 0.75,
+    "helpful": 0.6,
+    "professional": 0.5,
+    "positive": 0.55,
+    "neutral": 0.3,
+    "dismissive": 0.1,
+}
+
+
+def _apply_local_model_tone_signals(emotion_summary: dict, call_summary: dict) -> dict:
+    """
+    When running the local model, use the model's customer_tone and agent_tone
+    outputs to override the high-level emotion summary fields that the rule-based
+    system tends to get wrong.
+    """
+    customer_tone = (call_summary.get("customer_tone") or "").lower().strip()
+    agent_tone = (call_summary.get("agent_tone") or "").lower().strip()
+
+    if customer_tone and customer_tone in _TONE_TO_SATISFACTION:
+        emotion_summary["customer_satisfaction"] = _TONE_TO_SATISFACTION[customer_tone]
+        emotion_summary["call_tone"] = _TONE_TO_CALL_TONE[customer_tone]
+        # Only override resolution if the rule-based system returned "pending"
+        # (so explicit unresolved/resolved from context is preserved)
+        if emotion_summary.get("resolution_status") == "pending":
+            emotion_summary["resolution_status"] = _TONE_TO_RESOLUTION[customer_tone]
+
+    if agent_tone and agent_tone in _AGENT_TONE_TO_EMPATHY:
+        # Blend with rule-based score — take the higher of the two to avoid
+        # penalising agents when keyword detection misses empathy phrases
+        rule_based_score = emotion_summary.get("agent_empathy_score", 0.0)
+        model_score = _AGENT_TONE_TO_EMPATHY[agent_tone]
+        emotion_summary["agent_empathy_score"] = round(max(rule_based_score, model_score), 3)
+
+    return emotion_summary
+
+
 def analyze_call(
     audio_path,
     summarization_model="gpt4",
@@ -21,8 +87,8 @@ def analyze_call(
     compute_type="int8",
     local_model_path="../model/final",
     gpt4_model="gpt-4o-mini",
-    gpt4_temperature=0.3,
-    gpt4_max_tokens=800,
+    gpt4_temperature=0.2,
+    gpt4_max_tokens=1500,
     custom_keywords=None
 ):
     """
@@ -63,7 +129,7 @@ def analyze_call(
     behavioral_results = behavioral_analyze_call(transcript)
     
     behavioral_summary = summarize_behavioral_call(behavioral_results)
-    
+
     if summarization_model.lower() == "gpt4":
         call_summary = gpt4_summary_analyze(
             transcript=transcript,
@@ -71,21 +137,36 @@ def analyze_call(
             temperature=gpt4_temperature,
             max_tokens=gpt4_max_tokens
         )
+        if "emotional_assessment" in call_summary:
+            ea = call_summary["emotional_assessment"]
+            emotion_summary["summary"] = ea.get("emotional_narrative", emotion_summary["summary"])
+            emotion_summary["customer_satisfaction"] = ea.get("customer_satisfaction", emotion_summary["customer_satisfaction"])
+            emotion_summary["resolution_status"] = ea.get("resolution_status", emotion_summary["resolution_status"])
+            emotion_summary["call_tone"] = ea.get("call_tone", emotion_summary["call_tone"])
+            emotion_summary["agent_empathy_score"] = ea.get("agent_empathy_score", emotion_summary["agent_empathy_score"])
+            emotion_summary["customer_frustration_level"] = ea.get("customer_frustration_level", emotion_summary["customer_frustration_level"])
+            journey = emotion_summary.get("emotional_journey", {})
+            journey["trajectory"] = ea.get("emotional_trajectory", journey.get("trajectory"))
+            journey["start_emotion"] = ea.get("start_emotion", journey.get("start_emotion"))
+            journey["end_emotion"] = ea.get("end_emotion", journey.get("end_emotion"))
+            journey["description"] = ea.get("trajectory_description", journey.get("description"))
+            emotion_summary["emotional_journey"] = journey
     else:
         call_summary = local_summary_analyze(
             transcript=transcript,
             checkpoint_path=local_model_path
         )
-    
+        emotion_summary = _apply_local_model_tone_signals(emotion_summary, call_summary)
+
     coaching_tips = generate(
         transcript=transcript,
         summary_result=call_summary,
         emotion_result=emotion_results,
         behavioral_result=behavioral_results
     )
-    
+
     topic_analysis = analyze_topics(transcript, custom_keywords=custom_keywords)
-    
+
     return {
         "transcript": transcript,
         "emotion_analysis": emotion_results,
@@ -129,8 +210,8 @@ def analyze_transcript(
     summarization_model="gpt4",
     local_model_path="../model/final",
     gpt4_model="gpt-4o-mini",
-    gpt4_temperature=0.3,
-    gpt4_max_tokens=800
+    gpt4_temperature=0.2,
+    gpt4_max_tokens=1500
 ):
     """
     Analyze existing transcript without transcription.
@@ -147,13 +228,13 @@ def analyze_transcript(
         Dict with analysis results (same as analyze_call but without transcript key)
     """
     emotion_results = emotion_analyze_call(transcript)
-    
+
     emotion_summary = summarize_emotion_call(emotion_results)
-    
+
     behavioral_results = behavioral_analyze_call(transcript)
-    
+
     behavioral_summary = summarize_behavioral_call(behavioral_results)
-    
+
     if summarization_model.lower() == "gpt4":
         call_summary = gpt4_summary_analyze(
             transcript=transcript,
@@ -161,19 +242,34 @@ def analyze_transcript(
             temperature=gpt4_temperature,
             max_tokens=gpt4_max_tokens
         )
+        if "emotional_assessment" in call_summary:
+            ea = call_summary["emotional_assessment"]
+            emotion_summary["summary"] = ea.get("emotional_narrative", emotion_summary["summary"])
+            emotion_summary["customer_satisfaction"] = ea.get("customer_satisfaction", emotion_summary["customer_satisfaction"])
+            emotion_summary["resolution_status"] = ea.get("resolution_status", emotion_summary["resolution_status"])
+            emotion_summary["call_tone"] = ea.get("call_tone", emotion_summary["call_tone"])
+            emotion_summary["agent_empathy_score"] = ea.get("agent_empathy_score", emotion_summary["agent_empathy_score"])
+            emotion_summary["customer_frustration_level"] = ea.get("customer_frustration_level", emotion_summary["customer_frustration_level"])
+            journey = emotion_summary.get("emotional_journey", {})
+            journey["trajectory"] = ea.get("emotional_trajectory", journey.get("trajectory"))
+            journey["start_emotion"] = ea.get("start_emotion", journey.get("start_emotion"))
+            journey["end_emotion"] = ea.get("end_emotion", journey.get("end_emotion"))
+            journey["description"] = ea.get("trajectory_description", journey.get("description"))
+            emotion_summary["emotional_journey"] = journey
     else:
         call_summary = local_summary_analyze(
             transcript=transcript,
             checkpoint_path=local_model_path
         )
-    
+        emotion_summary = _apply_local_model_tone_signals(emotion_summary, call_summary)
+
     coaching_tips = generate(
         transcript=transcript,
         summary_result=call_summary,
         emotion_result=emotion_results,
         behavioral_result=behavioral_results
     )
-    
+
     return {
         "emotion_analysis": emotion_results,
         "emotion_summary": emotion_summary,
@@ -227,8 +323,8 @@ def get_call_summary(
     model="gpt4",
     local_model_path="../model/final",
     gpt4_model="gpt-4o-mini",
-    gpt4_temperature=0.3,
-    gpt4_max_tokens=800
+    gpt4_temperature=0.2,
+    gpt4_max_tokens=1500
 ):
     """
     Get only call summary and ratings.

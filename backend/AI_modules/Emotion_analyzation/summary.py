@@ -112,7 +112,8 @@ class CallSummaryAnalyzer:
     
     def _categorize_trajectory(self, start: str, end: str) -> str:
         positive_emotions = ["happy", "neutral"]
-        negative_emotions = ["sad", "angry", "frustrated", "confused"]
+        negative_emotions = ["sad", "angry", "frustrated"]
+        # "confused", "fearful", "surprised" are treated as neutral cognitive states
         
         start_is_negative = start in negative_emotions
         end_is_negative = end in negative_emotions
@@ -151,7 +152,7 @@ class CallSummaryAnalyzer:
         moments = []
         
         for turn in turns:
-            if turn.speaker == "Customer" and turn.emotion in ["angry", "frustrated"]:
+            if turn.speaker == "Customer" and turn.emotion in ["angry", "frustrated"] and (turn.emotion_score or 0) >= 0.6:
                 moments.append({
                     "type": "escalation",
                     "speaker": turn.speaker,
@@ -223,61 +224,90 @@ class CallSummaryAnalyzer:
     
     def _determine_resolution(self, turns: List[Turn], key_moments: List[Dict]) -> str:
         customer_turns = [t for t in turns if t.speaker == "Customer"]
-        
+        agent_turns = [t for t in turns if t.speaker == "Agent"]
+
         if not customer_turns:
             return "unknown"
-        
+
         last_customer_turn = customer_turns[-1]
-        
-        positive_ending = last_customer_turn.emotion in ["happy", "neutral"]
-        has_thanks = "thank" in last_customer_turn.text.lower()
-        has_apology = any(m["type"] == "apology" and m["speaker"] == "Agent" for m in key_moments)
-        
-        if positive_ending and has_thanks:
-            return "resolved"
-        elif last_customer_turn.emotion in ["angry", "frustrated"]:
+
+        # Look at last 3 customer turns for gratitude, not just the very last
+        recent_customer = customer_turns[-3:] if len(customer_turns) >= 3 else customer_turns
+        has_thanks = any("thank" in t.text.lower() for t in recent_customer)
+
+        # Check if agent used conclusive closing language
+        conclusive_phrases = [
+            "anything else", "have a great", "have a good", "goodbye",
+            "take care", "you're all set", "all set", "you're welcome",
+            "you are welcome", "glad i could", "happy to help",
+            "is there anything", "good day"
+        ]
+        agent_closed_call = False
+        if agent_turns:
+            last_agent_text = agent_turns[-1].text.lower()
+            agent_closed_call = any(p in last_agent_text for p in conclusive_phrases)
+
+        positive_ending = last_customer_turn.emotion in ["happy", "neutral", "surprised"]
+        ended_negative = last_customer_turn.emotion in ["angry", "frustrated"]
+
+        if ended_negative and not has_thanks:
             return "unresolved"
-        elif has_apology and positive_ending:
+        elif (positive_ending and has_thanks) or (positive_ending and agent_closed_call):
             return "resolved"
+        elif positive_ending:
+            return "pending"
         else:
             return "pending"
     
     def _predict_satisfaction(self, turns: List[Turn], key_moments: List[Dict], trajectory: Dict) -> str:
         customer_turns = [t for t in turns if t.speaker == "Customer"]
-        
+
         if not customer_turns:
             return "unknown"
-        
+
         last_emotion = customer_turns[-1].emotion
         agent_apologies = len([m for m in key_moments if m["type"] == "apology" and m["speaker"] == "Agent"])
         agent_empathy_count = len([m for m in key_moments if m["type"] == "empathy" and m["speaker"] == "Agent"])
         avg_sentiment = self._get_average_sentiment(customer_turns)
-        
+
+        # Check if customer expressed gratitude in any of the last 3 turns
+        recent_turns = customer_turns[-3:] if len(customer_turns) >= 3 else customer_turns
+        has_thanks = any("thank" in t.text.lower() for t in recent_turns)
+
         score = 0
-        
-        if last_emotion in ["happy", "neutral"]:
+
+        # happy ending is clearly satisfied; neutral is ambiguous, not as good
+        if last_emotion == "happy":
             score += 3
-        elif last_emotion in ["sad", "confused"]:
+        elif last_emotion == "neutral":
             score += 1
-        else:
+        elif last_emotion in ["sad", "confused", "fearful", "surprised"]:
+            score += 0
+        else:  # angry, frustrated
             score -= 2
-        
-        score += agent_apologies
-        score += agent_empathy_count
-        
+
+        # Gratitude is a strong positive signal — weight it more than apologies
+        if has_thanks:
+            score += 2
+
+        score += min(agent_apologies, 2)      # cap at 2 to avoid over-weighting
+        score += min(agent_empathy_count, 2)  # cap at 2
+
         if avg_sentiment == "positive":
             score += 2
         elif avg_sentiment == "negative":
             score -= 1
-        
+
         if trajectory["trajectory"] == "resolved":
             score += 2
         elif trajectory["trajectory"] == "escalated":
             score -= 2
-        
-        if score >= 4:
+        elif trajectory["trajectory"] == "positive_throughout":
+            score += 1
+
+        if score >= 6:
             return "very_satisfied"
-        elif score >= 2:
+        elif score >= 3:
             return "satisfied"
         elif score >= 0:
             return "neutral"
@@ -302,7 +332,7 @@ class CallSummaryAnalyzer:
         if not customer_turns:
             return 0.0
         
-        frustration_count = len([t for t in customer_turns if t.emotion in ["angry", "frustrated"]])
+        frustration_count = len([t for t in customer_turns if t.emotion in ["angry", "frustrated"] and (t.emotion_score or 0) >= 0.6])
         negative_sentiment_count = len([t for t in customer_turns if t.sentiment == "negative"])
         
         total_frustration_signals = frustration_count + negative_sentiment_count

@@ -3,20 +3,15 @@ from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 SYSTEM = (
-    "You are a call quality analyst. Analyze customer service call transcripts and provide:\n"
-    "1. A clear, human-friendly SUMMARY (2-3 sentences) explaining: what the customer needed, "
-    "how the agent helped, and what the outcome was.\n"
-    "2. CUSTOMER TONE: The customer's emotional state (Positive, Negative, Neutral, Frustrated, Satisfied).\n"
-    "3. AGENT TONE: The agent's approach (Positive, Professional, Apologetic, Helpful, Dismissive).\n"
-    "4. RATINGS: Rate agent performance on a 1-5 scale where 1=poor, 3=average, 5=excellent.\n"
-    "   - helpfulness: Did agent solve the problem?\n"
-    "   - respect: Was agent courteous and professional?\n"
-    "   - clarity: Was communication clear?\n"
-    "   - adherence: Did agent follow procedures?\n"
-    "   - overall: Overall service quality (required).\n\n"
-    "Output as valid JSON with keys: summary, customer_tone, agent_tone, ratings."
+    "Analyze this customer service call transcript. "
+    "Output ONLY valid JSON with these exact keys: "
+    "summary (2-3 sentences: what customer needed, how agent helped, outcome), "
+    "customer_tone (one of: Positive, Negative, Neutral, Frustrated, Satisfied), "
+    "agent_tone (one of: Professional, Helpful, Dismissive, Apologetic, Positive, Neutral), "
+    "ratings (object with helpfulness, respect, clarity, adherence, overall — each 1-5). "
+    "Rate based strictly on what the transcript shows."
 )
-TAIL = "Provide your analysis as valid JSON starting with '{' and ending with '}'."
+TAIL = "JSON output only:"
 
 _model = None
 _tokenizer = None
@@ -40,8 +35,9 @@ def _load_model(checkpoint_path="out-flan-sft1/final"):
 
 def _build_prompt(transcript):
     lines = transcript.split('\n')
-    if len(lines) > 20:
-        transcript = '\n'.join(lines[:20]) + '\n...(call continues)'
+    if len(lines) > 50:
+        # Keep first 30 lines (opening) and last 20 lines (resolution/closing)
+        transcript = '\n'.join(lines[:30]) + '\n...(call continues)\n' + '\n'.join(lines[-20:])
     
     prompt = (
         f"[SYSTEM]\n{SYSTEM}\n[/SYSTEM]\n"
@@ -197,7 +193,7 @@ def analyze_call(transcript, checkpoint_path="../model/final"):
     x = tokenizer(_build_prompt(transcript), return_tensors="pt", truncation=True, max_length=512).to(device)
     y = model.generate(
         **x, 
-        max_new_tokens=192,
+        max_new_tokens=300,
         num_beams=4,
         do_sample=False,
         early_stopping=True

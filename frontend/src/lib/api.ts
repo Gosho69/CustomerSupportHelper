@@ -27,6 +27,13 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+
+    // If the data is FormData, delete Content-Type to let the browser set it
+    // with the proper boundary for multipart/form-data
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => {
@@ -105,12 +112,7 @@ export const authApi = {
 
 // Calls API functions
 export const callsApi = {
-  uploadCall: (formData: FormData) =>
-    api.post("/calls/upload/", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }),
+  uploadCall: (formData: FormData) => api.post("/calls/upload/", formData),
 
   getMyCalls: () => api.get("/calls/my-calls/"),
 
