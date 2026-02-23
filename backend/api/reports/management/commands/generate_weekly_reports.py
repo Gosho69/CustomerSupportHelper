@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from reports.models import PerformanceReport
-from reports.performance_calculator import PerformanceCalculator
+from reports.report_factory import calculate_and_create_report
 from reports.date_utils import get_previous_week_date_range
 from users.models import MyUser
 
@@ -49,35 +48,11 @@ class Command(BaseCommand):
                     continue
                 
                 # Generate report
-                calculator = PerformanceCalculator(agent, start_date, end_date, report_type='weekly')
-                metrics = calculator.calculate_metrics()
-                
-                report = PerformanceReport.objects.create(
+                report = calculate_and_create_report(
                     agent=agent,
                     report_type='weekly',
                     start_date=start_date,
                     end_date=end_date,
-                    total_calls=metrics['call_volume']['total_calls'],
-                    average_call_duration=metrics['call_volume']['average_duration'],
-                    average_emotional_score=metrics['emotional_metrics']['average_score'],
-                    positive_calls_percentage=metrics['emotional_metrics']['positive_percentage'],
-                    negative_calls_percentage=metrics['emotional_metrics']['negative_percentage'],
-                    emotional_trend=metrics['emotional_metrics']['trend'],
-                    average_behavioral_score=metrics['behavioral_metrics']['average_score'],
-                    empathy_score=metrics['behavioral_metrics']['empathy'],
-                    professionalism_score=metrics['behavioral_metrics']['professionalism'],
-                    problem_solving_score=metrics['behavioral_metrics']['problem_solving'],
-                    behavioral_trend=metrics['behavioral_metrics']['trend'],
-                    most_common_topics=metrics['topic_metrics']['most_common_topics'],
-                    performance_consistency_score=metrics['consistency']['consistency_score'],
-                    variance_from_average=metrics['consistency']['variance'],
-                    percentile_score=metrics['comparison']['percentile'],
-                    strengths=metrics['assessment']['strengths'],
-                    weaknesses=metrics['assessment']['weaknesses'],
-                    recommendations=metrics['assessment']['recommendations'],
-                    overall_rating=metrics['assessment']['overall_rating'],
-                    summary=metrics['assessment']['summary'],
-                    generated_by=None  # System generated
                 )
                 
                 self.stdout.write(self.style.SUCCESS(

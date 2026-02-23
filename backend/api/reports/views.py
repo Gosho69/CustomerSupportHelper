@@ -8,6 +8,7 @@ from django.utils import timezone
 from .models import PerformanceReport
 from .serializers import PerformanceReportSerializer, ReportListSerializer
 from .performance_calculator import PerformanceCalculator
+from .report_factory import create_report_from_metrics
 from .date_utils import (
     get_week_date_range, 
     get_month_date_range,
@@ -85,36 +86,14 @@ class GenerateReportView(APIView):
         
         calculator = PerformanceCalculator(agent, start_date, end_date, report_type=report_type)
         metrics = calculator.calculate_metrics()
-        
-        report = PerformanceReport.objects.create(
+
+        report = create_report_from_metrics(
             agent=agent,
             report_type=report_type,
             start_date=start_date,
             end_date=end_date,
-            total_calls=metrics['call_volume']['total_calls'],
-            average_call_duration=metrics['call_volume']['average_duration'],
-            average_emotional_score=metrics['emotional_metrics']['average_score'],
-            positive_calls_percentage=metrics['emotional_metrics']['positive_percentage'],
-            negative_calls_percentage=metrics['emotional_metrics']['negative_percentage'],
-            emotional_trend=metrics['emotional_metrics']['trend'],
-            average_behavioral_score=metrics['behavioral_metrics']['average_score'],
-            empathy_score=metrics['behavioral_metrics']['empathy'],
-            professionalism_score=metrics['behavioral_metrics']['professionalism'],
-            problem_solving_score=metrics['behavioral_metrics']['problem_solving'],
-            behavioral_trend=metrics['behavioral_metrics']['trend'],
-            most_common_topics=metrics['topic_metrics']['most_common_topics'],
-            performance_consistency_score=metrics['consistency']['consistency_score'],
-            variance_from_average=metrics['consistency']['variance'],
-            percentile_score=metrics['comparison']['percentile'],
-            strengths=metrics['assessment']['strengths'],
-            weaknesses=metrics['assessment']['weaknesses'],
-            recommendations=metrics['assessment']['recommendations'],
-            weekly_analysis=metrics.get('weekly_analysis'),
-            overall_rating=metrics['assessment']['overall_rating'],
-            summary=metrics['assessment']['summary'],
-            executive_summary=metrics['assessment'].get('executive_summary', metrics['assessment']['summary']),
-            ai_generated=metrics['assessment'].get('ai_generated', False),
-            generated_by=request.user
+            metrics=metrics,
+            generated_by=request.user,
         )
         
         serializer = PerformanceReportSerializer(report)

@@ -8,6 +8,64 @@ import ReportDetailModal from "./agent/ReportDetailModal";
 import EmptyState from "./agent/EmptyState";
 import { reportsApi } from "@/lib/api";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapReport(r: any): Report {
+  const fmt = (d: string) =>
+    d
+      ? new Date(d).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "";
+  const start = fmt(r.start_date);
+  const end = fmt(r.end_date);
+  return {
+    id: r.id,
+    type: (r.report_type as "weekly" | "monthly") || "weekly",
+    period: start && end ? `${start} – ${end}` : start || end,
+    date: r.generated_at
+      ? new Date(r.generated_at).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "",
+    score: Math.round((r.average_behavioral_score ?? 0) * 100),
+    trend:
+      r.behavioral_trend === "improving"
+        ? "up"
+        : r.behavioral_trend === "declining"
+          ? "down"
+          : "stable",
+    totalCalls: r.total_calls ?? 0,
+    avgDuration: r.average_call_duration ?? 0,
+    strengths: Array.isArray(r.strengths) ? r.strengths : [],
+    improvements: Array.isArray(r.weaknesses)
+      ? r.weaknesses
+      : Array.isArray(r.recommendations)
+        ? r.recommendations
+        : [],
+    topSkills:
+      r.empathy_score != null
+        ? [
+            {
+              skill: "Empathy",
+              score: Math.round((r.empathy_score ?? 0) * 100),
+            },
+            {
+              skill: "Professionalism",
+              score: Math.round((r.professionalism_score ?? 0) * 100),
+            },
+            {
+              skill: "Problem Solving",
+              score: Math.round((r.problem_solving_score ?? 0) * 100),
+            },
+          ]
+        : undefined,
+  };
+}
+
 export default function AgentReports() {
   const [filter, setFilter] = useState<"all" | "weekly" | "monthly">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,26 +73,37 @@ export default function AgentReports() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-        const response = await reportsApi.getMyReports();
-        const rawData = response.data;
-        const reportsArray = Array.isArray(rawData)
-          ? rawData
-          : rawData?.reports || [];
-        setReports(reportsArray);
-      } catch (error) {
-        console.error("Failed to fetch reports:", error);
-        setReports([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const response = await reportsApi.getMyReports();
+      const rawData = response.data;
+      const reportsArray = Array.isArray(rawData)
+        ? rawData
+        : rawData?.reports || [];
+      setReports(reportsArray.map(mapReport));
+    } catch (error) {
+      console.error("Failed to fetch reports:", error);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleViewDetails = async (report: Report) => {
+    try {
+      const response = await reportsApi.getReportDetail(report.id);
+      setSelectedReport(mapReport(response.data));
+    } catch {
+      // Fall back to list-serializer data if detail fetch fails
+      setSelectedReport(report);
+    }
+  };
 
   const filteredReports = reports.filter((report) => {
     if (filter !== "all" && report.type !== filter) return false;
@@ -85,7 +154,7 @@ export default function AgentReports() {
           <ReportListItem
             key={report.id}
             report={report}
-            onViewDetails={setSelectedReport}
+            onViewDetails={handleViewDetails}
           />
         ))}
       </div>

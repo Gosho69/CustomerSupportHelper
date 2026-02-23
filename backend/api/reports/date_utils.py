@@ -1,5 +1,21 @@
+import calendar
 from datetime import datetime, timedelta
 from django.utils import timezone
+
+
+def is_sunday(date=None) -> bool:
+    """Return True if the given date (default: today) is a Sunday (weekday 6)."""
+    if date is None:
+        date = timezone.now().date()
+    return date.weekday() == 6
+
+
+def is_last_day_of_month(date=None) -> bool:
+    """Return True if the given date (default: today) is the last day of its month."""
+    if date is None:
+        date = timezone.now().date()
+    last_day = calendar.monthrange(date.year, date.month)[1]
+    return date.day == last_day
 
 
 def get_week_date_range(date=None):
