@@ -41,11 +41,10 @@ jobs:
 
   # ──────────────────────────────────────────────────
   # Job 2: Build & push Docker image to GitHub registry
-  # Targets linux/arm64 for Oracle Cloud Free Tier (Ampere A1)
   # Only runs on push to main
   # ──────────────────────────────────────────────────
   build-backend:
-    name: Build & Push Backend Image (ARM64)
+    name: Build & Push Backend Image
     runs-on: ubuntu-latest
     needs: lint
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -56,16 +55,6 @@ jobs:
       image: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
-
-      # QEMU lets the x86 CI runner emulate ARM64 for cross-compilation
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      # Buildx is required for multi-platform builds
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -83,12 +72,11 @@ jobs:
             type=sha,prefix=sha-
             type=raw,value=latest
 
-      - name: Build and push Docker image (linux/arm64)
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
-          platforms: linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -97,11 +85,11 @@ jobs:
           cache-to: type=inline
 
   # ──────────────────────────────────────────────────
-  # Job 3: Deploy to Oracle Cloud VM via SSH
-  # Pulls the new ARM64 image and restarts the container
+  # Job 3: Deploy to Hetzner server via SSH
+  # Pulls the new image and restarts the container
   # ──────────────────────────────────────────────────
   deploy-backend:
-    name: Deploy Backend → Oracle Cloud
+    name: Deploy Backend → Hetzner
     runs-on: ubuntu-latest
     needs: build-backend
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -109,9 +97,9 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.OCI_SSH_HOST }}
-          username: ${{ secrets.OCI_SSH_USER }}
-          key: ${{ secrets.OCI_SSH_KEY }}
+          host: ${{ secrets.HETZNER_SSH_HOST }}
+          username: ${{ secrets.HETZNER_SSH_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
             # Log in to GitHub Container Registry using a long-lived PAT
             # (GITHUB_TOKEN expires after the workflow; GHCR_PAT persists)

@@ -13,10 +13,10 @@ COPY requirements.txt .
 RUN python -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 
-# Install PyTorch from the standard PyPI index — has wheels for both x86_64 and ARM64.
-# Do NOT use --index-url https://download.pytorch.org/whl/cpu: that index only has x86 wheels.
+# Install PyTorch CPU-only (x86_64) — much smaller than the default CUDA wheel.
+# Hetzner runs x86; no GPU needed for inference.
 RUN pip install --upgrade pip && \
-    pip install torch torchaudio && \
+    pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # ─────────────────────────────────────────────
@@ -49,7 +49,7 @@ ENV DJANGO_SETTINGS_MODULE="api.settings"
 EXPOSE 8000
 
 # Migrate, collect static, then start Gunicorn
-# Workers: 2 (WhisperX + PyTorch use ~2–4 GB RAM each; Oracle free tier has 24 GB)
+# Workers: 2 (WhisperX + PyTorch use ~2–4 GB RAM each; Hetzner CX42 has 16 GB)
 # Timeout: 300s (long audio transcription can take 2–3 min)
 CMD ["sh", "-c", \
   "cd /app/backend/api && \

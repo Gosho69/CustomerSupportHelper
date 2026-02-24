@@ -1,6 +1,6 @@
-# Production docker-compose — lives on the DigitalOcean Droplet at /opt/agentsights/
+# Production docker-compose — lives on the Hetzner server at /opt/agentsights/
 #
-# First-time setup on the Droplet:
+# First-time setup on the server:
 #   1. mkdir -p /opt/agentsights/model
 #   2. rsync -avz backend/AI_modules/model/ root@YOUR_IP:/opt/agentsights/model/
 #   3. Copy this file to /opt/agentsights/docker-compose.prod.yml
