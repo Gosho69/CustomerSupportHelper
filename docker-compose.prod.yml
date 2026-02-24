@@ -44,10 +44,11 @@ services:
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
-    # Pattern: start serve in background, wait for it to be ready, pull model, then keep alive
+    # Pattern: start serve in background, wait for it to be ready, pull model, then keep alive.
+    # Note: avoid $VAR syntax — docker-compose substitutes it before the shell sees it.
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - "ollama serve & OLLAMA_PID=$!; sleep 8 && ollama pull llama3.2 && wait $OLLAMA_PID"
+      - "ollama serve & sleep 10 && ollama pull llama3.2; wait"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 10s
