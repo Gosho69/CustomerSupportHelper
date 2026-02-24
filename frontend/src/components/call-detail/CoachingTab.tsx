@@ -12,6 +12,16 @@ interface CoachingTabProps {
   call: CallDetail;
 }
 
+function renderEvidence(evidence: any): string | null {
+  if (!evidence) return null;
+  if (typeof evidence === "string") return evidence;
+  if (typeof evidence === "object") {
+    const issue = evidence.issue;
+    if (issue) return (issue as string).replace(/_/g, " ");
+  }
+  return null;
+}
+
 export default function CoachingTab({ call }: CoachingTabProps) {
   const ct = call.coaching_tips || {};
 
@@ -100,12 +110,12 @@ export default function CoachingTab({ call }: CoachingTabProps) {
                       {tip.justification}
                     </p>
                   )}
-                  {tip.evidence && (
+                  {renderEvidence(tip.evidence) && (
                     <p
                       className="text-xs italic"
                       style={{ color: "var(--text-tertiary)" }}
                     >
-                      Evidence: &quot;{tip.evidence}&quot;
+                      Evidence: &quot;{renderEvidence(tip.evidence)}&quot;
                     </p>
                   )}
                 </div>

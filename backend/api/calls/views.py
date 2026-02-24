@@ -48,10 +48,6 @@ class UploadCallView(APIView):
             'AI_modules', 'model', 'final'
         )
         
-        custom_keywords = None
-        if request.user.company and request.user.company.custom_keywords:
-            custom_keywords = request.user.company.custom_keywords
-        
         try:
             analysis_results = analyze_call(
                 audio_path=temp_path,
@@ -61,7 +57,6 @@ class UploadCallView(APIView):
                 compute_type="int8",
                 local_model_path=local_model_path,
                 gpt4_max_tokens=1500,
-                custom_keywords=custom_keywords
             )
             
             call = Call.objects.create(
@@ -74,7 +69,7 @@ class UploadCallView(APIView):
                 behavioral_analysis=analysis_results['behavioral_analysis'],
                 behavioral_summary=analysis_results['behavioral_summary'],
                 coaching_tips=analysis_results['coaching_tips'],
-                topic_analysis=analysis_results['topic_analysis']
+                topic_analysis=analysis_results['topic_analysis'],
             )
             
             # Extract duration from transcript

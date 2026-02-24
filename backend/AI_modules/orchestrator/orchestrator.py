@@ -89,7 +89,6 @@ def analyze_call(
     gpt4_model="gpt-4o-mini",
     gpt4_temperature=0.2,
     gpt4_max_tokens=1500,
-    custom_keywords=None
 ):
     """
     Complete call analysis pipeline.
@@ -165,7 +164,7 @@ def analyze_call(
         behavioral_result=behavioral_results
     )
 
-    topic_analysis = analyze_topics(transcript, custom_keywords=custom_keywords)
+    topic_analysis = analyze_topics(transcript)
 
     return {
         "transcript": transcript,
@@ -175,7 +174,7 @@ def analyze_call(
         "behavioral_summary": behavioral_summary,
         "call_summary": call_summary,
         "coaching_tips": coaching_tips,
-        "topic_analysis": topic_analysis
+        "topic_analysis": topic_analysis,
     }
 
 
