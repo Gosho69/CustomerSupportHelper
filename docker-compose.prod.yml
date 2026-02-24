@@ -22,7 +22,7 @@ services:
       # Persist uploaded audio files across deploys
       - media_files:/app/backend/api/media
       # Persist WhisperX / PyAnnote model cache (downloads once, kept forever)
-      - hf_cache:/root/.cache/huggingface
+      - hf_cache:/app/.cache/huggingface
       # Local fine-tuned FLAN-T5 model (uploaded once via rsync, never rebuilt)
       - ./model:/app/backend/AI_modules/model
     depends_on:

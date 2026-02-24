@@ -38,13 +38,17 @@ ENV PATH="/app/venv/bin:$PATH"
 
 COPY . /app/backend/
 
-RUN mkdir -p /app/backend/api/media /app/backend/api/staticfiles && \
+RUN mkdir -p /app/backend/api/media /app/backend/api/staticfiles /app/.cache/huggingface && \
     chown -R app:app /app
 
 USER app
 
 ENV PYTHONPATH="/app/backend:/app/backend/api"
 ENV DJANGO_SETTINGS_MODULE="api.settings"
+# Redirect HuggingFace + PyTorch caches to /app which the app user owns
+ENV HOME=/app
+ENV HF_HOME=/app/.cache/huggingface
+ENV TORCH_HOME=/app/.cache/torch
 
 EXPOSE 8000
 
