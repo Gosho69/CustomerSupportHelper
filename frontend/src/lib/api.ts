@@ -54,7 +54,6 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refresh_token");
         if (refreshToken) {
-          console.debug("API: 401 received — attempting token refresh");
           const response = await axios.post(
             `${API_BASE_URL}/users/token/refresh/`,
             {
@@ -68,14 +67,11 @@ api.interceptors.response.use(
           // Immediately update axios default header as well
           api.defaults.headers.common.Authorization = `Bearer ${access}`;
 
-          console.debug("API: refresh successful — retrying original request");
-
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
-        console.debug("API: token refresh failed — clearing auth");
         // Refresh failed, logout user
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");

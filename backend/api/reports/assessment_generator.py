@@ -2,9 +2,10 @@
 Assessment generation for performance reports.
 Handles both AI-powered and rule-based assessment generation.
 """
-import sys
-import traceback
+import logging
 from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 from .evidence_extractor import extract_call_evidence, extract_weekly_evidence
 
@@ -125,8 +126,7 @@ def _generate_ai_assessment(
         }
 
     except Exception as e:
-        print(f"[ERROR] AI generation failed: {str(e)}", file=sys.stderr)
-        traceback.print_exc(file=sys.stderr)
+        logger.exception("AI generation failed: %s", str(e))
         return None
 
 

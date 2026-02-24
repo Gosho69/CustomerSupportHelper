@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+.git/
+AI_modules/model/
+api/media/
+api/staticfiles/
+*.log
+.DS_Store
