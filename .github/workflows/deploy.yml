@@ -111,8 +111,10 @@ jobs:
             cd /opt/agentsights
             docker compose -f docker-compose.prod.yml pull backend
 
-            # Restart only backend — Ollama keeps running (no model reload delay)
-            docker compose -f docker-compose.prod.yml up -d --no-deps backend
+            # Restart only backend and wait until its healthcheck passes.
+            # --wait blocks until the container is healthy (migrate + collectstatic
+            # + PyTorch/WhisperX load can take 2-3 min on first boot).
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait backend
 
             # Remove dangling images to save disk space
             docker image prune -f
@@ -127,9 +129,10 @@ jobs:
           key: ${{ secrets.HETZNER_SSH_KEY }}
           envs: EXPECTED_SHA
           script: |
-            # Poll /api/version/ until the container is up (up to 2 min)
+            # Container is already healthy (--wait ensured it above).
+            # A short retry loop guards against any edge-case timing gap.
             DEPLOYED="unknown"
-            for i in $(seq 1 24); do
+            for i in $(seq 1 6); do
               RESULT=$(curl -sf http://localhost:8000/api/version/ 2>/dev/null \
                 | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'][:7])" 2>/dev/null \
                 || echo "")
@@ -137,7 +140,6 @@ jobs:
                 DEPLOYED="$RESULT"
                 break
               fi
-              echo "Waiting for container... attempt $i/24"
               sleep 5
             done
             EXPECTED="${EXPECTED_SHA:0:7}"
