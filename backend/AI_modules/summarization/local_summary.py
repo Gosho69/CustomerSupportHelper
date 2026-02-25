@@ -35,9 +35,12 @@ def _load_model(checkpoint_path="out-flan-sft1/final"):
 
 def _build_prompt(transcript):
     lines = transcript.split('\n')
-    if len(lines) > 50:
-        # Keep first 30 lines (opening) and last 20 lines (resolution/closing)
-        transcript = '\n'.join(lines[:30]) + '\n...(call continues)\n' + '\n'.join(lines[-20:])
+    if len(lines) > 30:
+        # Keep first 10 lines (problem statement) + last 20 lines (resolution).
+        # 30 lines × ~12 tokens + ~100 overhead ≈ 460 tokens — safely within the
+        # 512-token model budget.  The old first-30+last-20=50 line strategy caused
+        # the tokenizer to silently drop the resolution from the right end.
+        transcript = '\n'.join(lines[:10]) + '\n...(call continues)\n' + '\n'.join(lines[-20:])
     
     prompt = (
         f"[SYSTEM]\n{SYSTEM}\n[/SYSTEM]\n"
@@ -95,18 +98,25 @@ def _convert_utterances_to_transcript(utterances):
             else:
                 speaker_map[speaker_id] = speaker_id
     
-    transcript_lines = []
+    # Merge consecutive same-role utterances into one line.
+    # Synthetic diarization can fragment a single speaker turn into several short
+    # entries (e.g., agent pauses 0.6 s mid-sentence → two "Agent:" lines).
+    # Merging keeps the line count low and gives the model coherent full turns.
+    merged: list[tuple[str, str]] = []
     for turn in utterances:
         speaker_id = turn.get("role") or turn.get("speaker") or "Unknown"
         text = turn.get("text", "").strip()
-        
+
         if not text:
             continue
-        
+
         role = speaker_map.get(speaker_id, speaker_id)
-        transcript_lines.append(f"{role}: {text}")
-    
-    return "\n".join(transcript_lines)
+        if merged and merged[-1][0] == role:
+            merged[-1] = (role, merged[-1][1] + " " + text)
+        else:
+            merged.append((role, text))
+
+    return "\n".join(f"{role}: {text}" for role, text in merged)
 
 def _parse_json_safe(text):
     try:

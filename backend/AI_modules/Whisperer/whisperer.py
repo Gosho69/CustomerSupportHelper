@@ -145,20 +145,21 @@ def transcribe_mono_with_diarization(
     
     try:
         from pyannote.audio import Pipeline
-        
+
         diarize_pipeline = Pipeline.from_pretrained(
             "pyannote/speaker-diarization-3.1",
             use_auth_token=clean_token
         )
-        
+
         if num_speakers is not None:
             diarize_result = diarize_pipeline(audio_for_diarization, num_speakers=num_speakers)
         else:
             diarize_result = diarize_pipeline(audio_for_diarization)
         diarize_segments = _convert_pyannote_to_whisperx(diarize_result)
         diarized = _assign_speakers_to_words(diarize_segments, aligned)
-        
+
     except Exception as e:
+        print(f"[Whisperer] PyAnnote diarization failed ({type(e).__name__}): {e}", file=sys.stderr)
         diarization_failed = True
     
     if wav_temp_path and os.path.exists(wav_temp_path):
@@ -168,6 +169,7 @@ def transcribe_mono_with_diarization(
             pass
     
     if diarization_failed or diarized is None:
+        print("[Whisperer] Falling back to synthetic diarization (silence-gap method)", file=sys.stderr)
         diarized = _create_synthetic_diarization(aligned)
 
     utterances = []
@@ -293,8 +295,10 @@ def transcribe_mono_with_diarization(
 
 
 def _create_synthetic_diarization(aligned):
-    # 1.5 s is a more reliable threshold for a true speaker change.
-    MIN_SILENCE_GAP = 1.5
+    # 0.5 s covers typical inter-turn pauses in phone conversations (0.2–0.6 s).
+    # The old 1.5 s threshold was too conservative and caused entire conversation
+    # blocks to be merged into a single speaker.
+    MIN_SILENCE_GAP = 0.5
 
     segments = aligned.get("segments", [])
     if not segments:
