@@ -16,8 +16,6 @@ services:
     image: ghcr.io/${GITHUB_USERNAME}/agentsights-backend:latest
     restart: unless-stopped
     env_file: .env
-    environment:
-      BUILD_SHA: ${BUILD_SHA:-unknown}
     ports:
       - "8000:8000"
     volumes:

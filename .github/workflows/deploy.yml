@@ -128,6 +128,8 @@ jobs:
             # real value. Docker Compose env_file overrides Dockerfile ENV, which
             # bypasses Docker inline-cache issues with build-args.
             sed -i '/^BUILD_SHA=/d' .env
+            # Ensure file ends with a newline so BUILD_SHA lands on its own line
+            [ -n "$(tail -c1 .env)" ] && echo >> .env
             echo "BUILD_SHA=${DEPLOY_SHA}" >> .env
 
             # Restart only backend and wait until its healthcheck passes.

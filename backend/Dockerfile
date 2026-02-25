@@ -24,9 +24,6 @@ RUN pip install --upgrade pip && \
 # ─────────────────────────────────────────────
 FROM python:3.11-slim
 
-ARG BUILD_SHA=unknown
-ENV BUILD_SHA=${BUILD_SHA}
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 ffmpeg libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
