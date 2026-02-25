@@ -107,16 +107,14 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.HETZNER_SSH_HOST }}
           username: ${{ secrets.HETZNER_SSH_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          envs: DEPLOY_SHA
           script: |
-            # Log in to GitHub Container Registry using a long-lived PAT
-            # (GITHUB_TOKEN expires after the workflow; GHCR_PAT persists)
+            # Inline the SHA directly — avoids relying on appleboy/ssh-action envs
+            DEPLOY_SHA="${{ github.sha }}"
+
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
 
             cd /opt/agentsights
@@ -124,17 +122,20 @@ jobs:
             # Pull the updated backend image
             docker compose -f docker-compose.prod.yml pull backend
 
-            # Stamp the deployed SHA into .env so /api/version/ always returns the
-            # real value. Docker Compose env_file overrides Dockerfile ENV, which
-            # bypasses Docker inline-cache issues with build-args.
+            # Stamp BUILD_SHA into .env for persistence across restarts
             sed -i '/^BUILD_SHA=/d' .env
-            # Ensure file ends with a newline so BUILD_SHA lands on its own line
             [ -n "$(tail -c1 .env)" ] && echo >> .env
             echo "BUILD_SHA=${DEPLOY_SHA}" >> .env
 
+            # Also export so docker compose picks it up from the shell environment
+            # (highest priority for ${BUILD_SHA} substitution in compose file)
+            export BUILD_SHA="${DEPLOY_SHA}"
+
+            echo "======================================="
+            echo "BUILD_SHA stamped: $(grep '^BUILD_SHA=' .env)"
+            echo "======================================="
+
             # Restart only backend and wait until its healthcheck passes.
-            # --wait blocks until the container is healthy (migrate + collectstatic
-            # + PyTorch/WhisperX load can take 2-3 min).
             docker compose -f docker-compose.prod.yml up -d --no-deps --wait --force-recreate backend
 
             # Remove dangling images to save disk space
@@ -142,16 +143,22 @@ jobs:
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v1
-        env:
-          EXPECTED_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.HETZNER_SSH_HOST }}
           username: ${{ secrets.HETZNER_SSH_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          envs: EXPECTED_SHA
           script: |
+            EXPECTED_SHA="${{ github.sha }}"
+
+            # Debug: check what the container actually has
+            cd /opt/agentsights
+            echo "=== Container BUILD_SHA ==="
+            docker compose -f docker-compose.prod.yml exec -T backend printenv BUILD_SHA || echo "(not set)"
+            echo "=== .env file ==="
+            grep '^BUILD_SHA=' .env || echo "(not in .env)"
+            echo "==========================="
+
             # Container is already healthy (--wait ensured it above).
-            # A short retry loop guards against any edge-case timing gap.
             DEPLOYED="unknown"
             for i in $(seq 1 6); do
               RESULT=$(curl -sf http://localhost:8000/api/version/ 2>/dev/null \
