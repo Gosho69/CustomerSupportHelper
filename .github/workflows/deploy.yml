@@ -112,7 +112,6 @@ jobs:
           username: ${{ secrets.HETZNER_SSH_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
-            # Inline the SHA directly — avoids relying on appleboy/ssh-action envs
             DEPLOY_SHA="${{ github.sha }}"
 
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
@@ -127,16 +126,16 @@ jobs:
             [ -n "$(tail -c1 .env)" ] && echo >> .env
             echo "BUILD_SHA=${DEPLOY_SHA}" >> .env
 
-            # Also export so docker compose picks it up from the shell environment
-            # (highest priority for ${BUILD_SHA} substitution in compose file)
+            # Export so docker compose picks it up from the shell environment
             export BUILD_SHA="${DEPLOY_SHA}"
 
-            echo "======================================="
-            echo "BUILD_SHA stamped: $(grep '^BUILD_SHA=' .env)"
-            echo "======================================="
-
-            # Restart only backend and wait until its healthcheck passes.
-            docker compose -f docker-compose.prod.yml up -d --no-deps --wait --force-recreate backend
+            # Restart backend and wait until its healthcheck passes.
+            # If --wait fails (unhealthy), dump logs and exit with error.
+            if ! docker compose -f docker-compose.prod.yml up -d --no-deps --wait --force-recreate backend; then
+              echo "ERROR: Container is unhealthy. Dumping logs:"
+              docker compose -f docker-compose.prod.yml logs backend --tail 50
+              exit 1
+            fi
 
             # Remove dangling images to save disk space
             docker image prune -f
@@ -149,16 +148,8 @@ jobs:
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
             EXPECTED_SHA="${{ github.sha }}"
-
-            # Debug: check what the container actually has
             cd /opt/agentsights
-            echo "=== Container BUILD_SHA ==="
-            docker compose -f docker-compose.prod.yml exec -T backend printenv BUILD_SHA || echo "(not set)"
-            echo "=== .env file ==="
-            grep '^BUILD_SHA=' .env || echo "(not in .env)"
-            echo "==========================="
 
-            # Container is already healthy (--wait ensured it above).
             DEPLOYED="unknown"
             for i in $(seq 1 6); do
               RESULT=$(curl -sf http://localhost:8000/api/version/ 2>/dev/null \
@@ -175,6 +166,8 @@ jobs:
             echo "Deployed:  $DEPLOYED"
             if [ "$DEPLOYED" != "$EXPECTED" ]; then
               echo "ERROR: prod is running the wrong version!"
+              echo "=== Container logs (last 50 lines) ==="
+              docker compose -f docker-compose.prod.yml logs backend --tail 50
               exit 1
             fi
             echo "OK: prod is up-to-date."

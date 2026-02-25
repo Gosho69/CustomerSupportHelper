@@ -25,7 +25,7 @@ RUN pip install --upgrade pip && \
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 ffmpeg libsndfile1 \
+    libpq5 ffmpeg libsndfile1 curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Run as non-root user
