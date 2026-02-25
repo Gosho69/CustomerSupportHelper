@@ -54,6 +54,17 @@ jobs:
     outputs:
       image: ${{ steps.meta.outputs.tags }}
     steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false   # keep language runtimes (node, python…)
+          android: true       # ~8 GB
+          dotnet: true        # ~2 GB
+          haskell: true       # ~5 GB
+          large-packages: true
+          docker-images: false  # keep cached layers
+          swap-storage: true
+
       - uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
