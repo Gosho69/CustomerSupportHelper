@@ -83,8 +83,6 @@ jobs:
           # Cache layers between builds to speed up CI
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-to: type=inline
-          build-args: |
-            BUILD_SHA=${{ github.sha }}
 
   # ──────────────────────────────────────────────────
   # Job 3: Deploy to Hetzner server via SSH
@@ -98,22 +96,32 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.HETZNER_SSH_HOST }}
           username: ${{ secrets.HETZNER_SSH_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
+          envs: DEPLOY_SHA
           script: |
             # Log in to GitHub Container Registry using a long-lived PAT
             # (GITHUB_TOKEN expires after the workflow; GHCR_PAT persists)
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
 
-            # Pull the updated backend image
             cd /opt/agentsights
+
+            # Pull the updated backend image
             docker compose -f docker-compose.prod.yml pull backend
+
+            # Stamp the deployed SHA into .env so /api/version/ always returns the
+            # real value. Docker Compose env_file overrides Dockerfile ENV, which
+            # bypasses Docker inline-cache issues with build-args.
+            sed -i '/^BUILD_SHA=/d' .env
+            echo "BUILD_SHA=${DEPLOY_SHA}" >> .env
 
             # Restart only backend and wait until its healthcheck passes.
             # --wait blocks until the container is healthy (migrate + collectstatic
-            # + PyTorch/WhisperX load can take 2-3 min on first boot).
+            # + PyTorch/WhisperX load can take 2-3 min).
             docker compose -f docker-compose.prod.yml up -d --no-deps --wait backend
 
             # Remove dangling images to save disk space
