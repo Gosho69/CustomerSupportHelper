@@ -127,10 +127,19 @@ jobs:
           key: ${{ secrets.HETZNER_SSH_KEY }}
           envs: EXPECTED_SHA
           script: |
-            sleep 35
-            DEPLOYED=$(curl -sf http://localhost:8000/api/version/ \
-              | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'][:7])" 2>/dev/null \
-              || echo "unknown")
+            # Poll /api/version/ until the container is up (up to 2 min)
+            DEPLOYED="unknown"
+            for i in $(seq 1 24); do
+              RESULT=$(curl -sf http://localhost:8000/api/version/ 2>/dev/null \
+                | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'][:7])" 2>/dev/null \
+                || echo "")
+              if [ -n "$RESULT" ]; then
+                DEPLOYED="$RESULT"
+                break
+              fi
+              echo "Waiting for container... attempt $i/24"
+              sleep 5
+            done
             EXPECTED="${EXPECTED_SHA:0:7}"
             echo "Expected:  $EXPECTED"
             echo "Deployed:  $DEPLOYED"
