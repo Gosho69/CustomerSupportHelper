@@ -14,13 +14,21 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import os
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+
+def version_view(_request):
+    return JsonResponse({"sha": os.environ.get("BUILD_SHA", "unknown")})
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/version/', version_view, name='version'),
     path('api/users/', include('users.urls')),
     path('api/companies/', include('company.urls')),
     path('api/calls/', include('calls.urls')),

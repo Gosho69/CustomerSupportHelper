@@ -83,6 +83,8 @@ jobs:
           # Cache layers between builds to speed up CI
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-to: type=inline
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
 
   # ──────────────────────────────────────────────────
   # Job 3: Deploy to Hetzner server via SSH
@@ -114,6 +116,29 @@ jobs:
 
             # Remove dangling images to save disk space
             docker image prune -f
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.HETZNER_SSH_HOST }}
+          username: ${{ secrets.HETZNER_SSH_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          envs: EXPECTED_SHA
+          script: |
+            sleep 35
+            DEPLOYED=$(curl -sf http://localhost:8000/api/version/ \
+              | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'][:7])" 2>/dev/null \
+              || echo "unknown")
+            EXPECTED="${EXPECTED_SHA:0:7}"
+            echo "Expected:  $EXPECTED"
+            echo "Deployed:  $DEPLOYED"
+            if [ "$DEPLOYED" != "$EXPECTED" ]; then
+              echo "ERROR: prod is running the wrong version!"
+              exit 1
+            fi
+            echo "OK: prod is up-to-date."
 
   # ──────────────────────────────────────────────────
   # Job 4: Deploy frontend to Vercel
