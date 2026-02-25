@@ -13,12 +13,20 @@ def _detect_audio_properties(audio_path: str):
     try:
         data, sr = sf.read(audio_path)
         is_stereo = data.ndim > 1 and data.shape[1] >= 2
-        
+
         if is_stereo:
+            import numpy as np
+            left  = data[:, 0]
+            right = data[:, 1]
+            # If both channels are nearly identical, it's mono saved as stereo.
+            # Use channel correlation: >0.99 means the same audio on both tracks.
+            correlation = float(np.corrcoef(left, right)[0, 1])
+            if correlation > 0.99:
+                return False, None  # treat as mono → use diarization path
             return True, 2
         else:
             return False, None
-            
+
     except Exception as e:
         return False, None
 
