@@ -5,6 +5,106 @@ import dotenv
 
 warnings.filterwarnings("ignore", category=UserWarning, message=".*torchaudio.*deprecated.*")
 
+# ---------------------------------------------------------------------------
+# Agent-detection helpers
+# ---------------------------------------------------------------------------
+
+# Phrases that are strongly diagnostic of the *agent* speaking.  These are
+# the standard call-centre greetings that appear at the start of a call.
+_AGENT_GREETING_PHRASES = [
+    "thank you for calling",
+    "thanks for calling",
+    "thank you for contacting",
+    "thanks for contacting",
+    "thank you for reaching",
+    "thanks for reaching",
+    "how may i help you",
+    "how can i help you",
+    "how may i assist you",
+    "how can i assist you",
+    "how can i be of assistance",
+    "how may i be of assistance",
+    "you've reached",
+    "you have reached",
+    "welcome to",
+    "speaking, how",        # "this is [name] speaking, how can I…"
+    "my name is",
+    "good morning",
+    "good afternoon",
+    "good evening",
+]
+
+_ANNOUNCEMENT_KWS = frozenset({"record", "recorded", "recording",
+                                "monitor", "monitored", "monitoring"})
+
+
+def _detect_agent_by_greeting(utterances: list) -> str | None:
+    """
+    Return the speaker ID of the first utterance that contains one of the
+    canonical agent greeting phrases.  Returns None if no greeting is found.
+    Examines the first 8 utterances maximum (the greeting is always near the
+    start of the call).
+    """
+    for u in sorted(utterances, key=lambda x: x["start"])[:8]:
+        text_lower = u.get("text", "").lower()
+        for phrase in _AGENT_GREETING_PHRASES:
+            if phrase in text_lower:
+                return u["speaker"]
+    return None
+
+
+def _detect_agent_by_word_count(utterances: list) -> str | None:
+    """
+    In a customer-support call the agent typically speaks more words in total
+    than the customer.  Use this as a tie-breaker / last-resort heuristic.
+    """
+    word_counts: dict[str, int] = {}
+    for u in utterances:
+        spk = u["speaker"]
+        word_counts[spk] = word_counts.get(spk, 0) + len(u.get("text", "").split())
+    if not word_counts:
+        return None
+    return max(word_counts, key=word_counts.get)
+
+
+def _pick_agent_speaker(utterances: list, agent_hint: str | None = None) -> str:
+    """
+    Unified agent-speaker selection used by both mono-diarization and stereo
+    transcription paths.
+
+    Priority order
+    1. Explicit hint (already confirmed by caller to be the agent channel/ID).
+    2. First utterance whose text matches a known agent greeting phrase.
+    3. First utterance with 3+ words that is NOT a recording announcement.
+    4. Speaker with the most total words (agents talk more than customers).
+    5. Earliest speaker (last-resort absolute fallback).
+    """
+    if agent_hint and any(u["speaker"] == agent_hint for u in utterances):
+        return agent_hint
+
+    # 2 — greeting phrase detection
+    by_greeting = _detect_agent_by_greeting(utterances)
+    if by_greeting is not None:
+        return by_greeting
+
+    # 3 — first substantial non-announcement utterance
+    for u in sorted(utterances, key=lambda x: x["start"]):
+        words = [w.strip(".,!?;:\"'") for w in u.get("text", "").lower().split()]
+        if _ANNOUNCEMENT_KWS.intersection(words):
+            continue
+        if len(words) >= 3:
+            return u["speaker"]
+
+    # 4 — most words
+    by_words = _detect_agent_by_word_count(utterances)
+    if by_words is not None:
+        return by_words
+
+    # 5 — absolute fallback
+    if utterances:
+        return min(utterances, key=lambda u: u["start"])["speaker"]
+    return "SPEAKER_00"
+
 dotenv.load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
@@ -146,10 +246,18 @@ def transcribe_mono_with_diarization(
     try:
         from pyannote.audio import Pipeline
 
-        diarize_pipeline = Pipeline.from_pretrained(
-            "pyannote/speaker-diarization-3.1",
-            use_auth_token=clean_token
-        )
+        # pyannote.audio 3.x uses 'use_auth_token'; newer huggingface_hub
+        # aliases it to 'token' — try both so we work regardless of version.
+        try:
+            diarize_pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                use_auth_token=clean_token
+            )
+        except TypeError:
+            diarize_pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                token=clean_token
+            )
 
         if num_speakers is not None:
             diarize_result = diarize_pipeline(audio_for_diarization, num_speakers=num_speakers)
@@ -234,24 +342,8 @@ def transcribe_mono_with_diarization(
     utterances = _enforce_speaker_continuity(utterances)
 
     speakers = sorted(set(u["speaker"] for u in utterances))
-    if agent_hint and agent_hint in speakers:
-        agent_speaker = agent_hint
-    else:
-        # The agent ALWAYS speaks first in a call-centre recording (greeting).
-        # We use "first speaker whose utterance has 3+ words" so that a stray
-        # single mis-assigned boundary word from pyannote cannot flip the roles.
-        agent_speaker = None
-        for u in sorted(utterances, key=lambda x: x["start"]):
-            if len(u.get("text", "").split()) >= 3:
-                agent_speaker = u["speaker"]
-                break
-        # Fallback: truly first speaker if no 3-word utterance found
-        if agent_speaker is None:
-            if utterances:
-                agent_speaker = min(utterances, key=lambda u: u["start"])["speaker"]
-            else:
-                agent_speaker = "SPEAKER_00"
-    
+    agent_speaker = _pick_agent_speaker(utterances, agent_hint)
+
     role_map = {agent_speaker: "Agent"}
     non_agent_speakers = [spk for spk in speakers if spk != agent_speaker]
     if len(non_agent_speakers) == 1:
@@ -429,24 +521,10 @@ def transcribe_stereo_channels(
     ch0_utterances = _extract_utterances(results.get("ch0", {}), "ch0")
     ch1_utterances = _extract_utterances(results.get("ch1", {}), "ch1")
 
-    # Determine which channel is the Agent.
-    # Use the same rule as mono: the Agent is whoever makes the FIRST
-    # substantial utterance (3+ words).  A single "Hi." from the customer
-    # must not flip the roles — the agent greeting is always multi-word.
-    if agent_hint in ("ch0", "ch1"):
-        agent_ch = agent_hint
-    else:
-        all_sorted = sorted(ch0_utterances + ch1_utterances, key=lambda u: u["start"])
-        agent_ch = None
-        for u in all_sorted:
-            if len(u.get("text", "").split()) >= 3:
-                agent_ch = u["speaker"]  # "ch0" or "ch1"
-                break
-        # Fallback: truly first utterance if no 3-word utterance found
-        if agent_ch is None:
-            ch0_first = min((u["start"] for u in ch0_utterances), default=float("inf"))
-            ch1_first = min((u["start"] for u in ch1_utterances), default=float("inf"))
-            agent_ch = "ch0" if ch0_first <= ch1_first else "ch1"
+    # Determine which channel is the Agent using the unified multi-heuristic
+    # picker (greeting phrases → first 3+ word non-announcement → most words).
+    all_channel_utterances = ch0_utterances + ch1_utterances
+    agent_ch = _pick_agent_speaker(all_channel_utterances, agent_hint if agent_hint in ("ch0", "ch1") else None)
 
     role_map = {agent_ch: "Agent", ("ch1" if agent_ch == "ch0" else "ch0"): "Customer"}
 
