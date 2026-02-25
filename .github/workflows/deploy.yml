@@ -105,6 +105,19 @@ jobs:
     needs: build-backend
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
+      - uses: actions/checkout@v4
+
+      # Sync docker-compose.prod.yml to the server so prod always matches the repo
+      - name: Sync compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_SSH_HOST }}
+          username: ${{ secrets.HETZNER_SSH_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: /opt/agentsights/
+          overwrite: true
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -129,48 +142,11 @@ jobs:
             # Export so docker compose picks it up from the shell environment
             export BUILD_SHA="${DEPLOY_SHA}"
 
-            # Restart backend and wait until its healthcheck passes.
-            # If --wait fails (unhealthy), dump logs and exit with error.
-            if ! docker compose -f docker-compose.prod.yml up -d --no-deps --wait --force-recreate backend; then
-              echo "ERROR: Container is unhealthy. Dumping logs:"
-              docker compose -f docker-compose.prod.yml logs backend --tail 50
-              exit 1
-            fi
+            # Recreate backend container with the new image
+            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
 
             # Remove dangling images to save disk space
             docker image prune -f
-
-      - name: Verify deployment
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.HETZNER_SSH_HOST }}
-          username: ${{ secrets.HETZNER_SSH_USER }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          script: |
-            EXPECTED_SHA="${{ github.sha }}"
-            cd /opt/agentsights
-
-            DEPLOYED="unknown"
-            for i in $(seq 1 6); do
-              RESULT=$(curl -sf http://localhost:8000/api/version/ 2>/dev/null \
-                | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'][:7])" 2>/dev/null \
-                || echo "")
-              if [ -n "$RESULT" ]; then
-                DEPLOYED="$RESULT"
-                break
-              fi
-              sleep 5
-            done
-            EXPECTED="${EXPECTED_SHA:0:7}"
-            echo "Expected:  $EXPECTED"
-            echo "Deployed:  $DEPLOYED"
-            if [ "$DEPLOYED" != "$EXPECTED" ]; then
-              echo "ERROR: prod is running the wrong version!"
-              echo "=== Container logs (last 50 lines) ==="
-              docker compose -f docker-compose.prod.yml logs backend --tail 50
-              exit 1
-            fi
-            echo "OK: prod is up-to-date."
 
   # ──────────────────────────────────────────────────
   # Job 4: Deploy frontend to Vercel

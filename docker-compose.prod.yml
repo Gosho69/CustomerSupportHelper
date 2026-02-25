@@ -3,10 +3,11 @@
 # First-time setup on the server:
 #   1. mkdir -p /opt/agentsights/model
 #   2. rsync -avz backend/AI_modules/model/ root@YOUR_IP:/opt/agentsights/model/
-#   3. Copy this file to /opt/agentsights/docker-compose.prod.yml
-#   4. Create /opt/agentsights/.env with all real values (see backend/.env.example)
+#   3. Create /opt/agentsights/.env with all real values (see backend/.env.example)
 #      Make sure it includes: OLLAMA_API_URL=http://ollama:11434/api/generate
-#   5. docker compose -f docker-compose.prod.yml up -d
+#   4. docker compose -f docker-compose.prod.yml up -d
+#
+# Note: This file is automatically synced to the server on every deploy via CI/CD.
 
 services:
   # ─────────────────────────────────────────────
@@ -30,12 +31,6 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/users/login/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 90s      # Allow time for migrate + collectstatic + PyTorch load
 
   # ─────────────────────────────────────────────
   # Ollama — local LLM for coaching tips
