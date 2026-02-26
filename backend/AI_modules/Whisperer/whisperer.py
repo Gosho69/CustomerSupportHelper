@@ -108,6 +108,12 @@ def _pick_agent_speaker(utterances: list, agent_hint: str | None = None) -> str:
 dotenv.load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
+# Module-level caches — models are loaded once per gunicorn worker process and
+# reused across all requests.  This eliminates the 20–30 s per-call overhead
+# and prevents memory pressure that causes pyannote to fail silently.
+_whisper_model_cache: dict = {}
+_pyannote_pipeline_cache = None
+
 if not HF_TOKEN:
     print(
         "[Whisperer] CRITICAL: HF_TOKEN is not set — "
@@ -127,6 +133,41 @@ else:
         f"[Whisperer] HF_TOKEN loaded (hf_...{HF_TOKEN.strip(chr(34)).strip(chr(39))[-4:]})",
         file=sys.stderr, flush=True
     )
+
+
+def _get_whisper_model(model_size: str, device: str, compute_type: str):
+    """Return a cached WhisperX ASR model, loading it on first use."""
+    import whisperx
+    key = (model_size, device, compute_type)
+    if key not in _whisper_model_cache:
+        print(f"[Whisperer] Loading WhisperX '{model_size}' model (first use) …",
+              file=sys.stderr, flush=True)
+        _whisper_model_cache[key] = whisperx.load_model(model_size, device, compute_type=compute_type)
+        print(f"[Whisperer] ✓ WhisperX '{model_size}' model cached",
+              file=sys.stderr, flush=True)
+    return _whisper_model_cache[key]
+
+
+def _get_pyannote_pipeline(token: str):
+    """Return a cached pyannote diarization pipeline, loading it on first use."""
+    global _pyannote_pipeline_cache
+    if _pyannote_pipeline_cache is None:
+        from pyannote.audio import Pipeline
+        print("[Whisperer] Loading pyannote/speaker-diarization-3.1 (first use) …",
+              file=sys.stderr, flush=True)
+        try:
+            _pyannote_pipeline_cache = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                use_auth_token=token,
+            )
+        except TypeError:
+            _pyannote_pipeline_cache = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                token=token,
+            )
+        print("[Whisperer] ✓ PyAnnote pipeline cached",
+              file=sys.stderr, flush=True)
+    return _pyannote_pipeline_cache
 
 
 def _detect_audio_properties(audio_path: str):
@@ -230,13 +271,11 @@ def transcribe_mono_with_diarization(
 ):
     import whisperx
     import os
-    import tempfile
-    import subprocess
 
     if device not in ["cpu", "cuda"]:
         device = "cpu"
 
-    asr_model = whisperx.load_model(model_size, device, compute_type=compute_type)
+    asr_model = _get_whisper_model(model_size, device, compute_type)
     batch_size = 16 if device != "cpu" else 4
     asr_result = asr_model.transcribe(audio_path, batch_size=batch_size)
     audio = whisperx.load_audio(audio_path)
@@ -260,23 +299,7 @@ def transcribe_mono_with_diarization(
         if not clean_token:
             raise RuntimeError("HF_TOKEN is not set — cannot load pyannote model")
 
-        from pyannote.audio import Pipeline
-
-        print("[Whisperer] Loading pyannote/speaker-diarization-3.1 …",
-              file=sys.stderr, flush=True)
-
-        # pyannote.audio 3.x uses 'use_auth_token'; newer huggingface_hub
-        # aliases it to 'token' — try both so we work regardless of version.
-        try:
-            diarize_pipeline = Pipeline.from_pretrained(
-                "pyannote/speaker-diarization-3.1",
-                use_auth_token=clean_token
-            )
-        except TypeError:
-            diarize_pipeline = Pipeline.from_pretrained(
-                "pyannote/speaker-diarization-3.1",
-                token=clean_token
-            )
+        diarize_pipeline = _get_pyannote_pipeline(clean_token)
 
         print("[Whisperer] Running speaker diarization …",
               file=sys.stderr, flush=True)
@@ -515,7 +538,7 @@ def transcribe_stereo_channels(
         sf.write(tmp.name, channel_data, sr)
         tmp.close()
         try:
-            asr_model = whisperx.load_model(model_size, device, compute_type=compute_type)
+            asr_model = _get_whisper_model(model_size, device, compute_type)
             batch_size = 16 if device != "cpu" else 4
             asr_result = asr_model.transcribe(tmp.name, batch_size=batch_size)
             audio = whisperx.load_audio(tmp.name)

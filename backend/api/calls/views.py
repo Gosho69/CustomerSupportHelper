@@ -48,11 +48,13 @@ class UploadCallView(APIView):
             'AI_modules', 'model', 'final'
         )
         
+        whisper_model_size = os.environ.get("WHISPER_MODEL", "medium")
+
         try:
             analysis_results = analyze_call(
                 audio_path=temp_path,
                 summarization_model=summarization_model,
-                whisper_model_size="small",
+                whisper_model_size=whisper_model_size,
                 device="cpu",
                 compute_type="int8",
                 local_model_path=local_model_path,

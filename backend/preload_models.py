@@ -93,16 +93,18 @@ except Exception as exc:
     # transcription path will fall back gracefully.
     sys.exit(2)
 
-# ── 2. Download / verify WhisperX medium ASR model ───────────────────────────
-print("[preload] Loading WhisperX 'medium' ASR model …", flush=True)
+# ── 2. Download / verify WhisperX ASR model ──────────────────────────────────
+WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "medium")
+
+print(f"[preload] Loading WhisperX '{WHISPER_MODEL}' ASR model …", flush=True)
 t0 = time.time()
 
 try:
     import whisperx
 
-    asr_model = whisperx.load_model("medium", "cpu", compute_type="int8")
+    asr_model = whisperx.load_model(WHISPER_MODEL, "cpu", compute_type="int8")
     elapsed = round(time.time() - t0, 1)
-    print(f"[preload] ✓ WhisperX 'medium' model ready ({elapsed}s)", flush=True)
+    print(f"[preload] ✓ WhisperX '{WHISPER_MODEL}' model ready ({elapsed}s)", flush=True)
     del asr_model
 
 except Exception as exc:
