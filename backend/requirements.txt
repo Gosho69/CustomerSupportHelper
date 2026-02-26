@@ -1,11 +1,15 @@
-torch>=2.8.0
-transformers>=4.57.0
-datasets>=4.4.0
-tokenizers>=0.22.0
-accelerate>=1.11.0
+# torch + torchaudio are intentionally NOT listed here.
+# They are installed BEFORE this file in the Dockerfile with:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Listing them again here would cause pip to re-resolve from default PyPI
+# and potentially overwrite the CPU-only wheels with CUDA wheels.
 
-soundfile>=0.13.0
-torchaudio>=2.8.0
+transformers>=4.40.0
+datasets>=2.18.0
+tokenizers>=0.19.0
+accelerate>=0.30.0
+
+soundfile>=0.12.0
 
 git+https://github.com/m-bain/whisperx.git
 faster-whisper>=1.2.0

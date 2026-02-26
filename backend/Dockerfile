@@ -15,9 +15,14 @@ ENV PATH="/app/venv/bin:$PATH"
 
 # Install PyTorch CPU-only (x86_64) — much smaller than the default CUDA wheel.
 # Hetzner runs x86; no GPU needed for inference.
-# torchaudio is also from the CPU index (whisperx needs it for audio loading).
+# IMPORTANT: torch + torchaudio are NOT listed in requirements.txt to avoid pip
+# re-resolving them from default PyPI and installing the CUDA build on top.
+# Pin to a specific CPU version so the install is reproducible.
 RUN pip install --upgrade pip && \
-    pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install \
+      "torch==2.5.1+cpu" \
+      "torchaudio==2.5.1+cpu" \
+      --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # ─────────────────────────────────────────────
@@ -53,18 +58,25 @@ ENV TORCH_HOME=/app/.cache/torch
 
 EXPOSE 8000
 
-# Migrate, collect static, then start Gunicorn
+# Startup sequence:
+#   1. preload_models.py  — downloads PyAnnote + WhisperX models into the
+#      hf_cache volume (fast no-op on subsequent boots; slow only on first run).
+#      If pyannote fails (exit 2) we still start gunicorn in degraded mode.
+#   2. migrate + collectstatic
+#   3. gunicorn
 # Workers: 2 (WhisperX + PyTorch use ~2–4 GB RAM each; Hetzner CX42 has 16 GB)
-# Timeout: 300s (long audio transcription can take 2–3 min)
+# Timeout: 600s (audio transcription + model warmup can take 3–5 min first time)
 CMD ["sh", "-c", \
-  "cd /app/backend/api && \
+  "python /app/backend/preload_models.py; ret=$?; \
+   if [ $ret -eq 1 ]; then echo '[startup] WARN: HF_TOKEN missing — diarization will be low quality'; fi; \
+   cd /app/backend/api && \
    python manage.py migrate --noinput && \
    python manage.py collectstatic --noinput && \
    gunicorn api.wsgi:application \
      --bind 0.0.0.0:${PORT:-8000} \
      --workers 2 \
      --threads 2 \
-     --timeout 300 \
+     --timeout 600 \
      --max-requests 500 \
      --max-requests-jitter 50 \
      --log-file - \

@@ -109,14 +109,24 @@ dotenv.load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not HF_TOKEN:
-    print("[Whisperer] WARNING: HF_TOKEN is not set. PyAnnote speaker diarization will NOT work — "
-          "transcripts will use low-quality silence-gap speaker detection. "
-          "Set HF_TOKEN in your .env file (see https://huggingface.co/settings/tokens).",
-          file=sys.stderr)
+    print(
+        "[Whisperer] CRITICAL: HF_TOKEN is not set — "
+        "PyAnnote speaker diarization is DISABLED. "
+        "All transcripts will use the low-quality silence-gap fallback. "
+        "Set HF_TOKEN in /opt/agentsights/.env and restart the container.",
+        file=sys.stderr, flush=True
+    )
 elif not HF_TOKEN.strip('"').strip("'").startswith("hf_"):
-    print(f"[Whisperer] WARNING: HF_TOKEN doesn't start with 'hf_' — "
-          "PyAnnote may fail to authenticate with HuggingFace.",
-          file=sys.stderr)
+    print(
+        f"[Whisperer] CRITICAL: HF_TOKEN value does not start with 'hf_' — "
+        "PyAnnote authentication will fail.",
+        file=sys.stderr, flush=True
+    )
+else:
+    print(
+        f"[Whisperer] HF_TOKEN loaded (hf_...{HF_TOKEN.strip(chr(34)).strip(chr(39))[-4:]})",
+        file=sys.stderr, flush=True
+    )
 
 
 def _detect_audio_properties(audio_path: str):
@@ -247,7 +257,13 @@ def transcribe_mono_with_diarization(
     pyannote_input = {"waveform": waveform, "sample_rate": 16000}
 
     try:
+        if not clean_token:
+            raise RuntimeError("HF_TOKEN is not set — cannot load pyannote model")
+
         from pyannote.audio import Pipeline
+
+        print("[Whisperer] Loading pyannote/speaker-diarization-3.1 …",
+              file=sys.stderr, flush=True)
 
         # pyannote.audio 3.x uses 'use_auth_token'; newer huggingface_hub
         # aliases it to 'token' — try both so we work regardless of version.
@@ -262,6 +278,9 @@ def transcribe_mono_with_diarization(
                 token=clean_token
             )
 
+        print("[Whisperer] Running speaker diarization …",
+              file=sys.stderr, flush=True)
+
         if num_speakers is not None:
             diarize_result = diarize_pipeline(pyannote_input, num_speakers=num_speakers)
         else:
@@ -269,18 +288,33 @@ def transcribe_mono_with_diarization(
         diarize_segments = _convert_pyannote_to_whisperx(diarize_result)
         diarized = _assign_speakers_to_words(diarize_segments, aligned)
 
+        print("[Whisperer] ✓ PyAnnote diarization complete",
+              file=sys.stderr, flush=True)
+
     except Exception as e:
-        print(f"[Whisperer] PyAnnote diarization failed ({type(e).__name__}): {e}\n"
-              f"  → Check that HF_TOKEN is set in .env and starts with 'hf_'\n"
-              f"  → Ensure you accepted the model license at: "
-              f"https://huggingface.co/pyannote/speaker-diarization-3.1",
-              file=sys.stderr)
+        import traceback
+        print(
+            f"[Whisperer] DIARIZATION FAILED — falling back to low-quality synthetic method.\n"
+            f"  Error type : {type(e).__name__}\n"
+            f"  Error      : {e}\n"
+            f"  Traceback  :\n{traceback.format_exc()}\n"
+            f"\n"
+            f"  ACTIONS TO FIX:\n"
+            f"  1. Ensure HF_TOKEN is set in /opt/agentsights/.env (starts with hf_)\n"
+            f"  2. Accept model licence at: https://huggingface.co/pyannote/speaker-diarization-3.1\n"
+            f"  3. Also accept: https://huggingface.co/pyannote/segmentation-3.0\n"
+            f"  The HuggingFace account the token belongs to MUST be the account\n"
+            f"  that accepted the licence.",
+            file=sys.stderr, flush=True
+        )
         diarization_failed = True
 
     diarization_method = "pyannote"
     if diarization_failed or diarized is None:
-        print("[Whisperer] WARNING: Falling back to synthetic diarization (silence-gap method) — "
-              "transcript speaker labels will be low quality", file=sys.stderr)
+        print("[Whisperer] CRITICAL WARNING: Falling back to synthetic diarization "
+              "(silence-gap method) — transcript speaker labels will be WRONG. "
+              "See error above for how to fix PyAnnote authentication.",
+              file=sys.stderr, flush=True)
         diarized = _create_synthetic_diarization(aligned)
         diarization_method = "synthetic_fallback"
 
@@ -577,25 +611,40 @@ def transcribe_audio(
     if device == "mps":
         device = "cpu"
 
+    print(f"[Whisperer] transcribe_audio called: model={model_size}, device={device}, "
+          f"compute={compute_type}, file={os.path.basename(audio_path)}",
+          file=sys.stderr, flush=True)
+
     is_stereo, estimated_speakers = _detect_audio_properties(audio_path)
 
     if is_stereo:
+        print("[Whisperer] Stereo audio detected — using per-channel transcription",
+              file=sys.stderr, flush=True)
         # Stereo recordings have one speaker per channel — transcribe each
         # channel independently for perfect speaker separation.
         try:
-            return transcribe_stereo_channels(
+            result = transcribe_stereo_channels(
                 audio_path=audio_path,
                 model_size=model_size,
                 device=device,
                 compute_type=compute_type,
                 agent_hint=agent_hint,
             )
-        except Exception:
-            # Fall through to mono+diarization if stereo transcription fails
-            pass
+            print(f"[Whisperer] ✓ Stereo transcription complete: "
+                  f"{len(result.get('utterances', []))} utterances, "
+                  f"method={result.get('diarization_method')}",
+                  file=sys.stderr, flush=True)
+            return result
+        except Exception as exc:
+            print(f"[Whisperer] Stereo transcription failed ({type(exc).__name__}: {exc}) — "
+                  f"falling through to mono+diarization",
+                  file=sys.stderr, flush=True)
+
+    print("[Whisperer] Mono audio — using pyannote diarization path",
+          file=sys.stderr, flush=True)
 
     num_speakers = estimated_speakers if estimated_speakers is not None else 2
-    return transcribe_mono_with_diarization(
+    result = transcribe_mono_with_diarization(
         audio_path=audio_path,
         model_size=model_size,
         device=device,
@@ -603,3 +652,8 @@ def transcribe_audio(
         num_speakers=num_speakers,
         agent_hint=agent_hint
     )
+    print(f"[Whisperer] ✓ Mono transcription complete: "
+          f"{len(result.get('utterances', []))} utterances, "
+          f"method={result.get('diarization_method')}",
+          file=sys.stderr, flush=True)
+    return result
