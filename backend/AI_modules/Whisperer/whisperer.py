@@ -238,21 +238,14 @@ def transcribe_mono_with_diarization(
     
     diarized = None
     diarization_failed = False
-    
-    audio_for_diarization = audio_path
-    wav_temp_path = None
-    
-    if audio_path.lower().endswith(('.mp3', '.m4a', '.flac')):
-        try:
-            wav_temp_path = tempfile.mktemp(suffix=".wav")
-            subprocess.run(
-                ['ffmpeg', '-i', audio_path, '-acodec', 'pcm_s16le', '-ar', '16000', wav_temp_path, '-y'],
-                capture_output=True, check=True
-            )
-            audio_for_diarization = wav_temp_path
-        except Exception as e:
-            audio_for_diarization = audio_path
-    
+
+    # Pass the already-loaded waveform to pyannote as a dict instead of a file
+    # path. This bypasses pyannote's internal file-loading code which uses
+    # torchcodec.AudioDecoder — unavailable on CPU-only PyTorch builds.
+    import torch
+    waveform = torch.from_numpy(audio).float().unsqueeze(0)  # (1, samples)
+    pyannote_input = {"waveform": waveform, "sample_rate": 16000}
+
     try:
         from pyannote.audio import Pipeline
 
@@ -270,9 +263,9 @@ def transcribe_mono_with_diarization(
             )
 
         if num_speakers is not None:
-            diarize_result = diarize_pipeline(audio_for_diarization, num_speakers=num_speakers)
+            diarize_result = diarize_pipeline(pyannote_input, num_speakers=num_speakers)
         else:
-            diarize_result = diarize_pipeline(audio_for_diarization)
+            diarize_result = diarize_pipeline(pyannote_input)
         diarize_segments = _convert_pyannote_to_whisperx(diarize_result)
         diarized = _assign_speakers_to_words(diarize_segments, aligned)
 
@@ -283,12 +276,6 @@ def transcribe_mono_with_diarization(
               f"https://huggingface.co/pyannote/speaker-diarization-3.1",
               file=sys.stderr)
         diarization_failed = True
-
-    if wav_temp_path and os.path.exists(wav_temp_path):
-        try:
-            os.remove(wav_temp_path)
-        except:
-            pass
 
     diarization_method = "pyannote"
     if diarization_failed or diarized is None:
