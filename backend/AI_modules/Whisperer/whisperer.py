@@ -198,7 +198,7 @@ def _convert_pyannote_to_whisperx(pyannote_result):
     # Unwrap to get the Annotation regardless of version.
     annotation = pyannote_result
     if not hasattr(pyannote_result, 'itertracks'):
-        for attr in ('annotation', 'diarization', 'output', 'result'):
+        for attr in ('speaker_diarization', 'exclusive_speaker_diarization', 'annotation', 'diarization', 'output', 'result'):
             candidate = getattr(pyannote_result, attr, None)
             if candidate is not None and hasattr(candidate, 'itertracks'):
                 annotation = candidate
