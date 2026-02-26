@@ -41,6 +41,22 @@ api.interceptors.request.use(
   },
 );
 
+// Guard against multiple simultaneous logout redirects
+let isLoggingOut = false;
+
+function forceLogout() {
+  if (isLoggingOut) return;
+  isLoggingOut = true;
+
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("auth-storage"); // Zustand persist key
+  delete api.defaults.headers.common.Authorization;
+
+  window.location.href = "/login";
+}
+
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => response,
@@ -51,32 +67,32 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (!refreshToken) {
+        forceLogout();
+        return Promise.reject(error);
+      }
+
       try {
-        const refreshToken = localStorage.getItem("refresh_token");
-        if (refreshToken) {
-          const response = await axios.post(
-            `${API_BASE_URL}/users/token/refresh/`,
-            {
-              refresh: refreshToken,
-            },
-          );
+        const response = await axios.post(
+          `${API_BASE_URL}/users/token/refresh/`,
+          {
+            refresh: refreshToken,
+          },
+        );
 
-          const { access } = response.data;
-          localStorage.setItem("access_token", access);
+        const { access } = response.data;
+        localStorage.setItem("access_token", access);
 
-          // Immediately update axios default header as well
-          api.defaults.headers.common.Authorization = `Bearer ${access}`;
+        // Immediately update axios default header as well
+        api.defaults.headers.common.Authorization = `Bearer ${access}`;
 
-          // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${access}`;
-          return api(originalRequest);
-        }
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+        return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed, logout user
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
+        forceLogout();
         return Promise.reject(refreshError);
       }
     }
@@ -103,6 +119,8 @@ export const authApi = {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
+    localStorage.removeItem("auth-storage");
+    delete api.defaults.headers.common.Authorization;
   },
 };
 
