@@ -1,11 +1,12 @@
-torch>=2.8.0
+# torch is installed explicitly in the Dockerfile (CPU-only from pytorch.org/whl/cpu)
 transformers>=4.57.0
 datasets>=4.4.0
 tokenizers>=0.22.0
 accelerate>=1.11.0
 
 soundfile>=0.13.0
-torchaudio>=2.8.0
+# torchaudio is installed explicitly in the Dockerfile (from PyPI, not CPU index)
+# because pyannote.audio 3.4+ requires ffmpeg-backed AudioDecoder.
 
 git+https://github.com/m-bain/whisperx.git
 faster-whisper>=1.2.0
