@@ -108,6 +108,16 @@ def _pick_agent_speaker(utterances: list, agent_hint: str | None = None) -> str:
 dotenv.load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
+if not HF_TOKEN:
+    print("[Whisperer] WARNING: HF_TOKEN is not set. PyAnnote speaker diarization will NOT work — "
+          "transcripts will use low-quality silence-gap speaker detection. "
+          "Set HF_TOKEN in your .env file (see https://huggingface.co/settings/tokens).",
+          file=sys.stderr)
+elif not HF_TOKEN.strip('"').strip("'").startswith("hf_"):
+    print(f"[Whisperer] WARNING: HF_TOKEN doesn't start with 'hf_' — "
+          "PyAnnote may fail to authenticate with HuggingFace.",
+          file=sys.stderr)
+
 
 def _detect_audio_properties(audio_path: str):
     try:
@@ -267,18 +277,25 @@ def transcribe_mono_with_diarization(
         diarized = _assign_speakers_to_words(diarize_segments, aligned)
 
     except Exception as e:
-        print(f"[Whisperer] PyAnnote diarization failed ({type(e).__name__}): {e}", file=sys.stderr)
+        print(f"[Whisperer] PyAnnote diarization failed ({type(e).__name__}): {e}\n"
+              f"  → Check that HF_TOKEN is set in .env and starts with 'hf_'\n"
+              f"  → Ensure you accepted the model license at: "
+              f"https://huggingface.co/pyannote/speaker-diarization-3.1",
+              file=sys.stderr)
         diarization_failed = True
-    
+
     if wav_temp_path and os.path.exists(wav_temp_path):
         try:
             os.remove(wav_temp_path)
         except:
             pass
-    
+
+    diarization_method = "pyannote"
     if diarization_failed or diarized is None:
-        print("[Whisperer] Falling back to synthetic diarization (silence-gap method)", file=sys.stderr)
+        print("[Whisperer] WARNING: Falling back to synthetic diarization (silence-gap method) — "
+              "transcript speaker labels will be low quality", file=sys.stderr)
         diarized = _create_synthetic_diarization(aligned)
+        diarization_method = "synthetic_fallback"
 
     utterances = []
     current = None
@@ -382,7 +399,8 @@ def transcribe_mono_with_diarization(
     return {
         "call_id": os.path.basename(audio_path),
         "duration_sec": round(duration, 2),
-        "utterances": turns
+        "utterances": turns,
+        "diarization_method": diarization_method,
     }
 
 
@@ -558,6 +576,7 @@ def transcribe_stereo_channels(
         "call_id": os.path.basename(audio_path),
         "duration_sec": round(duration, 2),
         "utterances": merged_turns,
+        "diarization_method": "stereo_channels",
     }
 
 

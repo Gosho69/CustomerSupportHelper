@@ -15,8 +15,12 @@ ENV PATH="/app/venv/bin:$PATH"
 
 # Install PyTorch CPU-only (x86_64) — much smaller than the default CUDA wheel.
 # Hetzner runs x86; no GPU needed for inference.
+# torchaudio is installed separately from PyPI (not the CPU index) because
+# pyannote.audio 3.4+ requires torchaudio's AudioDecoder which needs ffmpeg
+# bindings — the CPU-only wheels don't include them.
 RUN pip install --upgrade pip && \
-    pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install torchaudio && \
     pip install --no-cache-dir -r requirements.txt
 
 # ─────────────────────────────────────────────
