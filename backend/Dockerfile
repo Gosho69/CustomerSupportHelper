@@ -23,7 +23,14 @@ RUN pip install --upgrade pip && \
       "torch==2.5.1+cpu" \
       "torchaudio==2.5.1+cpu" \
       --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    # Re-enforce CPU-only torch: pyannote.audio 3.4+ pulls torchcodec which can
+    # upgrade torch to a CUDA build from default PyPI.  Force CPU wheels back.
+    pip install \
+      "torch==2.5.1+cpu" \
+      "torchaudio==2.5.1+cpu" \
+      --index-url https://download.pytorch.org/whl/cpu \
+      --force-reinstall --no-deps
 
 # ─────────────────────────────────────────────
 # Stage 2: Runtime image

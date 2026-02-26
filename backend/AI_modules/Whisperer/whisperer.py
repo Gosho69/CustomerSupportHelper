@@ -192,9 +192,27 @@ def _detect_audio_properties(audio_path: str):
         return False, None
 
 
-def _convert_pyannote_to_whisperx(pyannote_annotation):
+def _convert_pyannote_to_whisperx(pyannote_result):
+    # pyannote.audio < 3.3 returns a pyannote.core.Annotation directly (has itertracks).
+    # pyannote.audio >= 3.3 wraps it in a DiarizeOutput / similar dataclass.
+    # Unwrap to get the Annotation regardless of version.
+    annotation = pyannote_result
+    if not hasattr(pyannote_result, 'itertracks'):
+        for attr in ('annotation', 'diarization', 'output', 'result'):
+            candidate = getattr(pyannote_result, attr, None)
+            if candidate is not None and hasattr(candidate, 'itertracks'):
+                annotation = candidate
+                break
+        else:
+            attrs = [a for a in dir(pyannote_result) if not a.startswith('_')]
+            raise AttributeError(
+                f"Cannot extract Annotation from pyannote output type "
+                f"'{type(pyannote_result).__name__}'. "
+                f"Available attributes: {attrs}"
+            )
+
     segments = []
-    for segment, track, speaker in pyannote_annotation.itertracks(yield_label=True):
+    for segment, track, speaker in annotation.itertracks(yield_label=True):
         segments.append({
             'start': segment.start,
             'end': segment.end,
