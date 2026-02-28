@@ -33,6 +33,23 @@ services:
         condition: service_healthy
 
   # ─────────────────────────────────────────────
+  # Scheduler — runs auto_generate_reports daily at 23:55
+  # Uses the same backend image but overrides CMD to run a
+  # lightweight shell loop instead of gunicorn.
+  # ─────────────────────────────────────────────
+  scheduler:
+    image: ghcr.io/${GITHUB_USERNAME}/agentsights-backend:latest
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - media_files:/app/backend/api/media
+      - hf_cache:/app/.cache/huggingface
+      - ./model:/app/backend/AI_modules/model
+    command: ["python", "/app/backend/scheduler_runner.py"]
+    depends_on:
+      - backend
+
+  # ─────────────────────────────────────────────
   # Ollama — local LLM for coaching tips
   # Pulls the model on first start; subsequent starts skip download (cached volume)
   # ─────────────────────────────────────────────
