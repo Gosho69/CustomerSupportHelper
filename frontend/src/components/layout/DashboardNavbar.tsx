@@ -62,8 +62,12 @@ export default function DashboardNavbar() {
     };
   }, [showProfileMenu]);
 
-  const confirmLogout = () => {
-    authApi.logout();
+  const confirmLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Continue with logout even if server call fails
+    }
     clearAuth();
     router.push("/login");
   };

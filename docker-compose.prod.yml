@@ -11,6 +11,20 @@
 
 services:
   # ─────────────────────────────────────────────
+  # Redis — message broker for Celery
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
   # Django backend
   # ─────────────────────────────────────────────
   backend:
@@ -31,6 +45,28 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────
+  # Celery worker — processes AI analysis tasks asynchronously
+  # concurrency=1: AI tasks are CPU/RAM heavy; one at a time on Hetzner CX42
+  # max-tasks-per-child=10: recycle worker to prevent memory leaks from ML models
+  # ─────────────────────────────────────────────
+  celery_worker:
+    image: ghcr.io/${GITHUB_USERNAME}/agentsights-backend:latest
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - media_files:/app/backend/api/media
+      - hf_cache:/app/.cache/huggingface
+      - ./model:/app/backend/AI_modules/model
+    command: ["sh", "-c", "cd /app/backend/api && celery -A api worker --loglevel=info --concurrency=1 --max-tasks-per-child=10"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
 
   # ─────────────────────────────────────────────
   # Scheduler — runs auto_generate_reports daily at 23:55
@@ -54,7 +90,7 @@ services:
   # Pulls the model on first start; subsequent starts skip download (cached volume)
   # ─────────────────────────────────────────────
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.6.2
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
@@ -74,3 +110,4 @@ volumes:
   media_files:
   hf_cache:
   ollama_data:
+  redis_data:

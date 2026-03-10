@@ -37,13 +37,9 @@ export default function LoginPage() {
       );
       const data = response.data;
 
-      // Store in Zustand store (which also sets localStorage)
-      setAuth(data.user, data.access, data.refresh);
+      // Store user in Zustand — tokens are in httpOnly cookies set by the server
+      setAuth(data.user);
 
-      // Small delay to ensure localStorage is set before navigation
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Redirect to dashboard
       router.push("/dashboard");
     } catch (err: any) {
       const errorMessage =

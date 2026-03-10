@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar, DashboardNavbar } from "@/components/layout";
 import { useAuthStore } from "@/store/authStore";
@@ -11,33 +11,22 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isAuthenticated, accessToken } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
+  const { user, isHydrating, hydrateFromServer } = useAuthStore();
 
-  // Wait for client-side hydration
+  // Rehydrate user state from server on mount (cookie is sent automatically)
   useEffect(() => {
-    setIsMounted(true);
+    if (!user) {
+      hydrateFromServer().then(() => {
+        const { user: hydratedUser } = useAuthStore.getState();
+        if (!hydratedUser) {
+          router.push("/login");
+        }
+      });
+    }
   }, []);
 
-  // Check authentication on mount
-  useEffect(() => {
-    if (isMounted) {
-      // Give a moment for auth store to load from localStorage
-      const checkAuth = setTimeout(() => {
-        if (!isAuthenticated() || !accessToken) {
-          router.push("/login");
-        } else {
-          setIsLoading(false);
-        }
-      }, 100);
-
-      return () => clearTimeout(checkAuth);
-    }
-  }, [isAuthenticated, accessToken, router, isMounted]);
-
-  // Show nothing while checking auth
-  if (!isMounted || isLoading || !isAuthenticated()) {
+  // Show loading while hydrating
+  if (isHydrating || !user) {
     return (
       <div
         className="h-screen flex items-center justify-center"
@@ -48,8 +37,7 @@ export default function DashboardLayout({
     );
   }
 
-  // Get user role, default to agent if not set
-  const userRole = user?.role || "agent";
+  const userRole = user.role || "agent";
 
   return (
     <div

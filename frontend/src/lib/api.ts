@@ -3,42 +3,24 @@ import axios from "axios";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
-// Create axios instance with default config
+// Create axios instance — withCredentials sends httpOnly cookies automatically
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
 });
-// If there's an access token in localStorage on load, set the default Authorization header
-if (typeof window !== "undefined") {
-  const token = localStorage.getItem("access_token");
-  if (token) {
-    api.defaults.headers.common.Authorization = `Bearer ${token}`;
-  }
-}
-// Request interceptor to add auth token
+
+// Request interceptor — strip Content-Type for multipart uploads
 api.interceptors.request.use(
   (config) => {
-    if (typeof window !== "undefined") {
-      // Try to get token from localStorage (set by auth store)
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-
-    // If the data is FormData, delete Content-Type to let the browser set it
-    // with the proper boundary for multipart/form-data
     if (config.data instanceof FormData) {
       delete config.headers["Content-Type"];
     }
-
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 // Guard against multiple simultaneous logout redirects
@@ -47,53 +29,32 @@ let isLoggingOut = false;
 function forceLogout() {
   if (isLoggingOut) return;
   isLoggingOut = true;
-
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("auth-storage"); // Zustand persist key
-  delete api.defaults.headers.common.Authorization;
-
   window.location.href = "/login";
 }
 
-// Response interceptor to handle token refresh
+// Response interceptor — refresh expired access token via cookie-based refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem("refresh_token");
-      if (!refreshToken) {
-        forceLogout();
-        return Promise.reject(error);
-      }
-
       try {
-        const response = await axios.post(
+        // POST to refresh endpoint; the refresh_token cookie is sent automatically.
+        // The server sets a new access_token cookie in the response.
+        await axios.post(
           `${API_BASE_URL}/users/token/refresh/`,
-          {
-            refresh: refreshToken,
-          },
+          {},
+          { withCredentials: true },
         );
 
-        const { access } = response.data;
-        localStorage.setItem("access_token", access);
-
-        // Immediately update axios default header as well
-        api.defaults.headers.common.Authorization = `Bearer ${access}`;
-
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${access}`;
+        // Retry the original request — the new access_token cookie is now set
         return api(originalRequest);
-      } catch (refreshError) {
-        // Refresh failed, logout user
+      } catch {
         forceLogout();
-        return Promise.reject(refreshError);
+        return Promise.reject(error);
       }
     }
 
@@ -115,13 +76,7 @@ export const authApi = {
     phone?: string;
   }) => api.patch("/users/me/", data),
 
-  logout: () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("auth-storage");
-    delete api.defaults.headers.common.Authorization;
-  },
+  logout: () => api.post("/users/logout/"),
 };
 
 // Calls API functions
@@ -131,6 +86,8 @@ export const callsApi = {
   getMyCalls: () => api.get("/calls/my-calls/"),
 
   getCallDetail: (id: number) => api.get(`/calls/${id}/`),
+
+  getCallStatus: (id: number) => api.get(`/calls/${id}/status/`),
 };
 
 // Reports API functions

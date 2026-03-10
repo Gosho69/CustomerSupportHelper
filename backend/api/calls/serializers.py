@@ -33,9 +33,16 @@ class CallUploadSerializer(serializers.ModelSerializer):
         return value
 
 
+class CallStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Call
+        fields = ['id', 'status', 'error_message']
+        read_only_fields = ['id', 'status', 'error_message']
+
+
 class CallSerializer(serializers.ModelSerializer):
     agent_name = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Call
         fields = [
@@ -44,6 +51,8 @@ class CallSerializer(serializers.ModelSerializer):
             'agent_name',
             'call_date',
             'duration',
+            'status',
+            'error_message',
             'audio_file',
             'transcript',
             'transcript_summary',
@@ -60,6 +69,8 @@ class CallSerializer(serializers.ModelSerializer):
             'id',
             'agent',
             'call_date',
+            'status',
+            'error_message',
             'transcript',
             'transcript_summary',
             'emotional_analysis',
@@ -71,7 +82,7 @@ class CallSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-    
+
     def get_agent_name(self, obj):
         return f"{obj.agent.first_name} {obj.agent.last_name}".strip() or obj.agent.username
 
@@ -89,6 +100,7 @@ class CallListSerializer(serializers.ModelSerializer):
             'agent_name',
             'call_date',
             'duration',
+            'status',
             'behavioral_score',
             'skill_scores',
             'created_at'

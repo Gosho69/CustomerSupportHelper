@@ -3,12 +3,18 @@ from transformers import pipeline
 import warnings
 warnings.filterwarnings("ignore")
 
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from typing import List
 from data_models.data_models import Turn
+
+
+_emotion_analyzer_instance = None
+
+
+def get_emotion_analyzer() -> "EmotionAnalyzer":
+    global _emotion_analyzer_instance
+    if _emotion_analyzer_instance is None:
+        _emotion_analyzer_instance = EmotionAnalyzer()
+    return _emotion_analyzer_instance
 
 
 class EmotionAnalyzer:
@@ -282,7 +288,7 @@ def emotion_analyze_call(transcript):
         )
         turns.append(turn)
     
-    analyzer = EmotionAnalyzer()
+    analyzer = get_emotion_analyzer()
     analyzed_turns = analyzer.analyze_turns(turns)
     
     return [turn.to_dict() for turn in analyzed_turns]

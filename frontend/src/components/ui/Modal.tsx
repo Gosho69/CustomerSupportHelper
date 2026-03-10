@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -26,6 +29,29 @@ export default function Modal({
   title,
   size = "2xl",
 }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Escape key handler
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Focus trap: save previous focus, move focus into modal on open, restore on close
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      modalRef.current?.focus();
+    } else {
+      previousFocusRef.current?.focus();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -35,7 +61,12 @@ export default function Modal({
         onClick={onClose}
       />
       <div
-        className={`relative bg-white rounded-xl p-6 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto shadow-xl`}
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? "modal-title" : undefined}
+        tabIndex={-1}
+        className={`relative bg-white rounded-xl p-6 w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto shadow-xl focus:outline-none`}
         style={{ border: "1px solid var(--border)" }}
       >
         {title && (
@@ -44,6 +75,7 @@ export default function Modal({
             style={{ borderColor: "var(--border)" }}
           >
             <h2
+              id="modal-title"
               className="text-lg font-semibold"
               style={{ color: "var(--text-primary)" }}
             >
@@ -52,6 +84,7 @@ export default function Modal({
             <button
               onClick={onClose}
               className="p-1.5 rounded-md hover:bg-[var(--hover-bg)] transition-colors"
+              aria-label="Close dialog"
             >
               <X
                 className="w-4 h-4"
@@ -64,6 +97,7 @@ export default function Modal({
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-[var(--hover-bg)] transition-colors"
+            aria-label="Close dialog"
           >
             <X className="w-4 h-4" style={{ color: "var(--text-tertiary)" }} />
           </button>

@@ -239,11 +239,7 @@ export default function Profile() {
       const { api } = await import("@/lib/api");
       await api.patch("/users/me/", editedProfile);
       const updatedUser = { ...user, ...editedProfile };
-      setAuth(
-        updatedUser,
-        localStorage.getItem("access_token") || "",
-        localStorage.getItem("refresh_token") || "",
-      );
+      setAuth(updatedUser);
       setIsEditing(false);
       toast.success("Profile updated successfully!");
     } catch (error) {

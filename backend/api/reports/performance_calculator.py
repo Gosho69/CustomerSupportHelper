@@ -15,11 +15,11 @@ class PerformanceCalculator:
         self.end_date = end_date
         self.report_type = report_type
         self.use_ai = use_ai
-        self.calls = Call.objects.filter(
+        self.calls = list(Call.objects.filter(
             agent=agent,
             call_date__gte=start_date,
             call_date__lte=end_date
-        )
+        ))
         self.weekly_reports = None
         self.ai_generator = None
         
@@ -41,7 +41,7 @@ class PerformanceCalculator:
             ).order_by('start_date')
     
     def calculate_metrics(self) -> Dict:
-        if not self.calls.exists():
+        if not self.calls:
             return self._empty_report()
         
         metrics = {
@@ -55,13 +55,13 @@ class PerformanceCalculator:
         
         metrics['assessment'] = self._generate_assessment(all_metrics=metrics)
         
-        if self.report_type == 'monthly' and self.weekly_reports and self.weekly_reports.exists():
+        if self.report_type == 'monthly' and self.weekly_reports:
             metrics = self._enhance_with_weekly_data(metrics)
         
         return metrics
     
     def _calculate_call_volume(self) -> Dict:
-        total = self.calls.count()
+        total = len(self.calls)
         durations = [c.duration for c in self.calls if c.duration]
         avg_duration = statistics.mean(durations) if durations else None
         
@@ -181,18 +181,17 @@ class PerformanceCalculator:
             role='agent'
         ).exclude(id=self.agent.id)
         
+        all_teammate_calls = Call.objects.filter(
+            agent__in=team_agents,
+            call_date__gte=self.start_date,
+            call_date__lte=self.end_date
+        ).values_list('behavioral_analysis', flat=True)
+
         team_scores = []
-        for teammate in team_agents:
-            teammate_calls = Call.objects.filter(
-                agent=teammate,
-                call_date__gte=self.start_date,
-                call_date__lte=self.end_date
-            )
-            for call in teammate_calls:
-                if call.behavioral_analysis:
-                    score = call.behavioral_analysis.get('behavioral_score', 0)
-                    normalized_score = score / 100.0
-                    team_scores.append(normalized_score)
+        for behavioral_analysis in all_teammate_calls:
+            if behavioral_analysis:
+                score = behavioral_analysis.get('behavioral_score', 0)
+                team_scores.append(score / 100.0)
         
         if not team_scores:
             return {'percentile': None}
@@ -247,11 +246,12 @@ class PerformanceCalculator:
             return "stable"
     
     def _enhance_with_weekly_data(self, metrics: Dict) -> Dict:
+        weekly_reports_list = list(self.weekly_reports)
         weekly_behavioral_scores = []
         weekly_emotional_scores = []
         weekly_consistency_scores = []
-        
-        for week_report in self.weekly_reports:
+
+        for week_report in weekly_reports_list:
             if week_report.average_behavioral_score:
                 weekly_behavioral_scores.append(week_report.average_behavioral_score)
             if week_report.average_emotional_score:
@@ -272,8 +272,8 @@ class PerformanceCalculator:
             best_week_idx = weekly_behavioral_scores.index(max(weekly_behavioral_scores))
             worst_week_idx = weekly_behavioral_scores.index(min(weekly_behavioral_scores))
             
-            best_week_report = list(self.weekly_reports)[best_week_idx]
-            worst_week_report = list(self.weekly_reports)[worst_week_idx]
+            best_week_report = weekly_reports_list[best_week_idx]
+            worst_week_report = weekly_reports_list[worst_week_idx]
             
             weekly_analysis = {
                 'best_week': {
@@ -282,7 +282,7 @@ class PerformanceCalculator:
                     'behavioral_score': best_week_report.average_behavioral_score,
                     'total_calls': best_week_report.total_calls
                 },
-                'total_weeks_analyzed': self.weekly_reports.count()
+                'total_weeks_analyzed': len(weekly_reports_list)
             }
             
             if len(weekly_behavioral_scores) > 1 and best_week_idx != worst_week_idx:

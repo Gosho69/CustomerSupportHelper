@@ -1,6 +1,4 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import concurrent.futures
 
 from Whisperer.whisperer import transcribe_audio
 from Emotion_analyzation.emotion_analyzer import emotion_analyze_call
@@ -120,51 +118,66 @@ def analyze_call(
         device=device,
         compute_type=compute_type
     )
-    
-    emotion_results = emotion_analyze_call(transcript)
-    
-    emotion_summary = summarize_emotion_call(emotion_results)
-    
-    behavioral_results = behavioral_analyze_call(transcript)
-    
-    behavioral_summary = summarize_behavioral_call(behavioral_results)
 
-    if summarization_model.lower() == "gpt4":
-        call_summary = gpt4_summary_analyze(
-            transcript=transcript,
-            model=gpt4_model,
-            temperature=gpt4_temperature,
-            max_tokens=gpt4_max_tokens
-        )
-        if "emotional_assessment" in call_summary:
-            ea = call_summary["emotional_assessment"]
-            emotion_summary["summary"] = ea.get("emotional_narrative", emotion_summary["summary"])
-            emotion_summary["customer_satisfaction"] = ea.get("customer_satisfaction", emotion_summary["customer_satisfaction"])
-            emotion_summary["resolution_status"] = ea.get("resolution_status", emotion_summary["resolution_status"])
-            emotion_summary["call_tone"] = ea.get("call_tone", emotion_summary["call_tone"])
-            emotion_summary["agent_empathy_score"] = ea.get("agent_empathy_score", emotion_summary["agent_empathy_score"])
-            emotion_summary["customer_frustration_level"] = ea.get("customer_frustration_level", emotion_summary["customer_frustration_level"])
-            journey = emotion_summary.get("emotional_journey", {})
-            journey["trajectory"] = ea.get("emotional_trajectory", journey.get("trajectory"))
-            journey["start_emotion"] = ea.get("start_emotion", journey.get("start_emotion"))
-            journey["end_emotion"] = ea.get("end_emotion", journey.get("end_emotion"))
-            journey["description"] = ea.get("trajectory_description", journey.get("description"))
-            emotion_summary["emotional_journey"] = journey
-    else:
-        call_summary = local_summary_analyze(
-            transcript=transcript,
-            checkpoint_path=local_model_path
-        )
+    # Run all post-transcription analyses in parallel.
+    # Emotion chain, behavioral chain, summarization, and topic extraction are
+    # independent of each other — especially valuable because the GPT-4 summary
+    # is a network call that would otherwise block the CPU-bound analyses.
+    def _run_emotion():
+        results = emotion_analyze_call(transcript)
+        summary = summarize_emotion_call(results)
+        return results, summary
+
+    def _run_behavioral():
+        results = behavioral_analyze_call(transcript)
+        summary = summarize_behavioral_call(results)
+        return results, summary
+
+    def _run_summary():
+        if summarization_model.lower() == "gpt4":
+            return gpt4_summary_analyze(
+                transcript=transcript,
+                model=gpt4_model,
+                temperature=gpt4_temperature,
+                max_tokens=gpt4_max_tokens,
+            )
+        return local_summary_analyze(transcript=transcript, checkpoint_path=local_model_path)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        emotion_future = executor.submit(_run_emotion)
+        behavioral_future = executor.submit(_run_behavioral)
+        summary_future = executor.submit(_run_summary)
+        topics_future = executor.submit(analyze_topics, transcript)
+
+        emotion_results, emotion_summary = emotion_future.result()
+        behavioral_results, behavioral_summary = behavioral_future.result()
+        call_summary = summary_future.result()
+        topic_analysis = topics_future.result()
+
+    # Enrich emotion_summary with GPT-4 emotional assessment (sequential — needs both results)
+    if summarization_model.lower() == "gpt4" and "emotional_assessment" in call_summary:
+        ea = call_summary["emotional_assessment"]
+        emotion_summary["summary"] = ea.get("emotional_narrative", emotion_summary["summary"])
+        emotion_summary["customer_satisfaction"] = ea.get("customer_satisfaction", emotion_summary["customer_satisfaction"])
+        emotion_summary["resolution_status"] = ea.get("resolution_status", emotion_summary["resolution_status"])
+        emotion_summary["call_tone"] = ea.get("call_tone", emotion_summary["call_tone"])
+        emotion_summary["agent_empathy_score"] = ea.get("agent_empathy_score", emotion_summary["agent_empathy_score"])
+        emotion_summary["customer_frustration_level"] = ea.get("customer_frustration_level", emotion_summary["customer_frustration_level"])
+        journey = emotion_summary.get("emotional_journey", {})
+        journey["trajectory"] = ea.get("emotional_trajectory", journey.get("trajectory"))
+        journey["start_emotion"] = ea.get("start_emotion", journey.get("start_emotion"))
+        journey["end_emotion"] = ea.get("end_emotion", journey.get("end_emotion"))
+        journey["description"] = ea.get("trajectory_description", journey.get("description"))
+        emotion_summary["emotional_journey"] = journey
+    elif summarization_model.lower() != "gpt4":
         emotion_summary = _apply_local_model_tone_signals(emotion_summary, call_summary)
 
     coaching_tips = generate(
         transcript=transcript,
         summary_result=call_summary,
         emotion_result=emotion_results,
-        behavioral_result=behavioral_results
+        behavioral_result=behavioral_results,
     )
-
-    topic_analysis = analyze_topics(transcript)
 
     return {
         "transcript": transcript,

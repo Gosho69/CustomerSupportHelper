@@ -3,9 +3,18 @@ from users.models import MyUser
 
 
 class Call(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+
     agent = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='calls', limit_choices_to={'role': 'agent'})
     call_date = models.DateTimeField(auto_now_add=True)
     duration = models.IntegerField(null=True, blank=True, help_text="Call duration in seconds")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
+    error_message = models.TextField(null=True, blank=True)
     
     audio_file = models.FileField(upload_to='call_recordings/', null=True, blank=True)
     

@@ -2,9 +2,6 @@ import json
 import re
 from typing import List, Dict, Set
 from collections import defaultdict
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data_models.data_models import Turn
 
@@ -325,8 +322,18 @@ class TopicAnalyzer:
         }
 
 
+_topic_analyzer_instance = None
+
+
+def get_topic_analyzer() -> "TopicAnalyzer":
+    global _topic_analyzer_instance
+    if _topic_analyzer_instance is None:
+        _topic_analyzer_instance = TopicAnalyzer()
+    return _topic_analyzer_instance
+
+
 def analyze_topics(transcript: dict, custom_keywords: Dict[str, Dict] = None) -> Dict:
-    analyzer = TopicAnalyzer(custom_keywords=custom_keywords)
+    analyzer = TopicAnalyzer(custom_keywords=custom_keywords) if custom_keywords else get_topic_analyzer()
     
     if 'utterances' in transcript:
         turns = transcript['utterances']

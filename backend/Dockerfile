@@ -56,7 +56,7 @@ RUN mkdir -p /app/backend/api/media /app/backend/api/staticfiles /app/.cache/hug
 
 USER app
 
-ENV PYTHONPATH="/app/backend:/app/backend/api"
+ENV PYTHONPATH="/app/backend:/app/backend/api:/app/backend/AI_modules"
 ENV DJANGO_SETTINGS_MODULE="api.settings"
 # Redirect HuggingFace + PyTorch caches to /app which the app user owns
 ENV HOME=/app

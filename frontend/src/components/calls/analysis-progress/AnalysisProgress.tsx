@@ -118,9 +118,42 @@ export default function AnalysisProgress() {
           const formData = new FormData();
           formData.append("audio_file", analysisFile.file);
           formData.append("summarization_model", summarizationModel);
+
+          // Upload returns 202 immediately with call_id
           const response = await callsApi.uploadCall(formData);
-          const callId = response.data?.call?.id;
-          completeFile(index, callId);
+          const callId = response.data?.call_id;
+
+          if (!callId) {
+            throw new Error("No call ID returned from upload");
+          }
+
+          // Poll for completion every 5 seconds
+          await new Promise<void>((resolve) => {
+            const intervalId = setInterval(async () => {
+              try {
+                const statusResponse = await callsApi.getCallStatus(callId);
+                const { status: callStatus, error_message } =
+                  statusResponse.data;
+
+                if (callStatus === "completed") {
+                  clearInterval(intervalId);
+                  completeFile(index, callId);
+                  resolve();
+                } else if (callStatus === "failed") {
+                  clearInterval(intervalId);
+                  failFile(index, error_message || "Analysis failed");
+                  resolve();
+                }
+                // pending or processing — keep polling
+              } catch {
+                clearInterval(intervalId);
+                failFile(index, "Failed to check analysis status");
+                resolve();
+              }
+            }, 5000);
+
+            stepTimersRef.current.push(intervalId as unknown as NodeJS.Timeout);
+          });
         } catch (error: any) {
           const message =
             error.response?.data?.error || error.message || "Analysis failed";

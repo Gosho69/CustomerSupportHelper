@@ -346,6 +346,16 @@ class BehavioralAnalyzer:
         }
 
 
+_behavioral_analyzer_instance = None
+
+
+def get_behavioral_analyzer() -> "BehavioralAnalyzer":
+    global _behavioral_analyzer_instance
+    if _behavioral_analyzer_instance is None:
+        _behavioral_analyzer_instance = BehavioralAnalyzer()
+    return _behavioral_analyzer_instance
+
+
 def behavioral_analyze_call(transcript):
     """
     Analyze behavioral patterns in a call transcript from WhisperX.
@@ -377,5 +387,5 @@ def behavioral_analyze_call(transcript):
             'end_time': utt.get('end', 0.0)
         })
     
-    analyzer = BehavioralAnalyzer()
+    analyzer = get_behavioral_analyzer()
     return analyzer.analyze_call(turns)

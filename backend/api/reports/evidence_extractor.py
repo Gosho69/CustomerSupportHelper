@@ -10,7 +10,7 @@ from calls.models import Call
 def extract_call_evidence(calls) -> Dict:
     """Extract evidence from individual calls for AI report generation."""
     evidence = {
-        'total_calls': calls.count(),
+        'total_calls': len(calls),
         'calls_analyzed': [],
         'common_patterns': [],
         'issues_found': [],

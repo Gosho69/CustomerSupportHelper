@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Phone, Clock, Calendar } from "lucide-react";
 import { callsApi } from "@/lib/api";
@@ -34,6 +34,26 @@ export default function CallDetailModal({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  // Focus trap: save previous focus, restore on unmount
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    modalRef.current?.focus();
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, []);
 
   useEffect(() => {
     let root = document.getElementById("modal-portal");
@@ -92,7 +112,12 @@ export default function CallDetailModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="call-detail-title"
+        tabIndex={-1}
+        className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl focus:outline-none"
         style={{ border: "1px solid var(--border)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -110,6 +135,7 @@ export default function CallDetailModal({
             </div>
             <div>
               <h2
+                id="call-detail-title"
                 className="text-2xl font-bold"
                 style={{ color: "var(--text-primary)" }}
               >

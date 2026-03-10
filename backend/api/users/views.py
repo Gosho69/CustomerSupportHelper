@@ -3,10 +3,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from django.conf import settings
 from .models import MyUser
 from .serializers import (
-    UserSerializer, 
-    LoginSerializer, 
+    UserSerializer,
+    LoginSerializer,
     CreateAgentSerializer,
     CreateHeadOfDepartmentSerializer,
     CreateAdminSerializer
@@ -30,28 +31,84 @@ class IsAdminOrHeadOfDepartment(permissions.BasePermission):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
-    
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         user = authenticate(
             username=serializer.validated_data['username'],
             password=serializer.validated_data['password']
         )
-        
+
         if not user:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         if not user.is_active:
             return Response({'error': 'User account is disabled'}, status=status.HTTP_403_FORBIDDEN)
-        
+
         refresh = RefreshToken.for_user(user)
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        response = Response({
+            'access': access_token,
+            'refresh': refresh_token,
             'user': UserSerializer(user).data
         })
+
+        secure = not settings.DEBUG
+        response.set_cookie(
+            'access_token',
+            access_token,
+            max_age=3600,
+            httponly=True,
+            secure=secure,
+            samesite='Lax',
+        )
+        response.set_cookie(
+            'refresh_token',
+            refresh_token,
+            max_age=7 * 24 * 3600,
+            httponly=True,
+            secure=secure,
+            samesite='Lax',
+        )
+        return response
+
+
+class LogoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        response = Response({'message': 'Logged out successfully'})
+        response.delete_cookie('access_token', samesite='Lax')
+        response.delete_cookie('refresh_token', samesite='Lax')
+        return response
+
+
+class CookieTokenRefreshView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({'error': 'No refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            token = RefreshToken(refresh_token)
+            new_access = str(token.access_token)
+            response = Response({'access': new_access})
+            response.set_cookie(
+                'access_token',
+                new_access,
+                max_age=3600,
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite='Lax',
+            )
+            return response
+        except Exception:
+            return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class CreateAdminView(APIView):
