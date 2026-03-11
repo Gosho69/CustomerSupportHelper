@@ -8,22 +8,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt .
 
 RUN python -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 
-# Install PyTorch CPU-only (x86_64) — much smaller than the default CUDA wheel.
+# Install PyTorch CPU-only BEFORE copying requirements.txt so it lives in its
+# own cached layer. This layer is only invalidated when the torch version pin
+# changes — NOT on every requirements.txt change (which saves ~15-20 min CI time).
 # Hetzner runs x86; no GPU needed for inference.
 # IMPORTANT: torch + torchaudio are NOT listed in requirements.txt to avoid pip
 # re-resolving them from default PyPI and installing the CUDA build on top.
-# Pin to a specific CPU version so the install is reproducible.
 RUN pip install --upgrade pip && \
     pip install \
       "torch==2.5.1+cpu" \
       "torchaudio==2.5.1+cpu" \
-      --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt && \
+      --index-url https://download.pytorch.org/whl/cpu
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt && \
     # Re-enforce CPU-only torch: pyannote.audio 3.4+ pulls torchcodec which can
     # upgrade torch to a CUDA build from default PyPI.  Force CPU wheels back.
     pip install \

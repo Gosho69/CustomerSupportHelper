@@ -64,7 +64,7 @@ class LoginView(APIView):
             max_age=3600,
             httponly=True,
             secure=secure,
-            samesite='Lax',
+            samesite='None',
         )
         response.set_cookie(
             'refresh_token',
@@ -72,7 +72,7 @@ class LoginView(APIView):
             max_age=7 * 24 * 3600,
             httponly=True,
             secure=secure,
-            samesite='Lax',
+            samesite='None',
         )
         return response
 
@@ -82,8 +82,8 @@ class LogoutView(APIView):
 
     def post(self, request):
         response = Response({'message': 'Logged out successfully'})
-        response.delete_cookie('access_token', samesite='Lax')
-        response.delete_cookie('refresh_token', samesite='Lax')
+        response.delete_cookie('access_token', samesite='None')
+        response.delete_cookie('refresh_token', samesite='None')
         return response
 
 
@@ -104,7 +104,7 @@ class CookieTokenRefreshView(APIView):
                 max_age=3600,
                 httponly=True,
                 secure=not settings.DEBUG,
-                samesite='Lax',
+                samesite='None',
             )
             return response
         except Exception:
