@@ -27,7 +27,7 @@ class UploadCallView(APIView):
         summarization_model = serializer.validated_data.get('summarization_model', 'gpt4')
         audio_file = serializer.validated_data['audio_file']
 
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.name)[1])
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.name)[1], dir=settings.MEDIA_ROOT)
         temp_path = temp_file.name
 
         try:
