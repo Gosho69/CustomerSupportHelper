@@ -13,11 +13,21 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import sys
 
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Ensure AI modules are importable regardless of PYTHONPATH / working directory.
+# In Docker, ENV PYTHONPATH already handles this. Locally (runserver, celery worker)
+# it may not be set, so we add the paths explicitly here.
+# - backend/            → allows `from AI_modules.X import Y` (used in tasks.py)
+# - backend/AI_modules/ → allows `from Whisperer.X import Y` (used inside orchestrator)
+for _p in (str(BASE_DIR.parent), str(BASE_DIR.parent / 'AI_modules')):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 
 # Quick-start development settings - unsuitable for production
@@ -238,10 +248,13 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 1800        # 30 min hard limit
 CELERY_TASK_SOFT_TIME_LIMIT = 1500   # 25 min soft limit
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Never prefetch more than one task per worker.
+                                        # Critical with concurrency=1 — prevents a second
+                                        # task being reserved while the first is running.
 
 CELERY_BEAT_SCHEDULE = {
     'cleanup-stuck-calls': {
-        'task': 'api.calls.tasks.cleanup_stuck_calls',
+        'task': 'calls.tasks.cleanup_stuck_calls',
         'schedule': 600,  # every 10 minutes
     },
 }

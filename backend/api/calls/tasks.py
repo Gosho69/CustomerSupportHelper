@@ -20,7 +20,12 @@ def _mark_failed(call_id: int, reason: str) -> None:
         logger.exception(f"Could not mark call {call_id} as failed in DB")
 
 
-@shared_task(bind=True, max_retries=0)
+@shared_task(
+    bind=True,
+    max_retries=0,
+    acks_late=True,           # Only remove from queue after success/failure — NOT on receipt.
+    reject_on_worker_lost=True,  # If the worker process is killed (OOM), requeue the task.
+)
 def analyze_call_task(
     self,
     call_id: int,

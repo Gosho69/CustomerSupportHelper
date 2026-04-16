@@ -1,0 +1,32 @@
+# Local development docker-compose — provides Redis (Celery broker) only.
+#
+# Usage:
+#   1. docker compose up -d
+#      (starts Redis on localhost:6379)
+#
+#   2. In a separate terminal — start the Celery worker:
+#      cd backend/api
+#      celery -A api worker --loglevel=info --concurrency=1
+#
+#   3. In a separate terminal — start Django:
+#      cd backend/api
+#      python manage.py runserver
+#
+#   4. In a separate terminal — start the frontend:
+#      cd frontend
+#      npm run dev
+#
+# The frontend/.env.local already points to http://localhost:8000/api,
+# so local dev will use your local Django server, not production.
+
+services:
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

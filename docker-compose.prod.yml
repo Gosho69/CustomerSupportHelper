@@ -61,7 +61,18 @@ services:
       - media_files:/app/backend/api/media
       - hf_cache:/app/.cache/huggingface
       - ./model:/app/backend/AI_modules/model
-    command: ["sh", "-c", "cd /app/backend/api && celery -A api worker --loglevel=info --concurrency=1 --max-tasks-per-child=10"]
+    # max-tasks-per-child=1: each analysis task gets a brand-new worker process.
+    # WhisperX + PyAnnote load ~3 GB of models; recycling after every task prevents
+    # memory from accumulating across runs and triggering OOM kills.
+    command: ["sh", "-c", "cd /app/backend/api && celery -A api worker --loglevel=info --concurrency=1 --max-tasks-per-child=1"]
+    healthcheck:
+      # Ping the worker over the broker. If the worker is unresponsive (deadlocked,
+      # OOM, etc.) Docker will restart the container automatically.
+      test: ["CMD-SHELL", "cd /app/backend/api && celery -A api inspect ping --timeout 10 2>&1 | grep -q pong"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 120s   # Give worker time to load models on first boot
     depends_on:
       redis:
         condition: service_healthy
