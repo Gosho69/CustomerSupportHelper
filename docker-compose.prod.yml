@@ -86,6 +86,21 @@ services:
       - backend
 
   # ─────────────────────────────────────────────
+  # Celery Beat — fires periodic tasks (e.g. cleanup_stuck_calls every 10 min)
+  # Lightweight: no AI models loaded, just schedules tasks into Redis.
+  # ─────────────────────────────────────────────
+  celery_beat:
+    image: ghcr.io/${GITHUB_USERNAME}/agentsights-backend:latest
+    restart: unless-stopped
+    env_file: .env
+    command: ["sh", "-c", "cd /app/backend/api && celery -A api beat --loglevel=info"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  # ─────────────────────────────────────────────
   # Ollama — local LLM for coaching tips
   # Pulls the model on first start; subsequent starts skip download (cached volume)
   # ─────────────────────────────────────────────

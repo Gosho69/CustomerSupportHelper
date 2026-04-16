@@ -127,9 +127,23 @@ export default function AnalysisProgress() {
             throw new Error("No call ID returned from upload");
           }
 
-          // Poll for completion every 5 seconds
+          // Poll for completion every 5 seconds, give up after 35 minutes
           await new Promise<void>((resolve) => {
+            const POLL_INTERVAL_MS = 5_000;
+            const POLL_TIMEOUT_MS = 35 * 60 * 1_000;
+            const startedAt = Date.now();
+
             const intervalId = setInterval(async () => {
+              if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+                clearInterval(intervalId);
+                failFile(
+                  index,
+                  "Analysis timed out. The server may have run out of memory — please try again or contact support.",
+                );
+                resolve();
+                return;
+              }
+
               try {
                 const statusResponse = await callsApi.getCallStatus(callId);
                 const { status: callStatus, error_message } =
@@ -150,7 +164,7 @@ export default function AnalysisProgress() {
                 failFile(index, "Failed to check analysis status");
                 resolve();
               }
-            }, 5000);
+            }, POLL_INTERVAL_MS);
 
             stepTimersRef.current.push(intervalId as unknown as NodeJS.Timeout);
           });

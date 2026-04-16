@@ -1,8 +1,23 @@
 import os
 import logging
+import datetime
 from celery import shared_task
+from celery.exceptions import SoftTimeLimitExceeded
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+
+def _mark_failed(call_id: int, reason: str) -> None:
+    """Best-effort: write status=failed to DB. Never raises."""
+    try:
+        from .models import Call
+        call = Call.objects.get(id=call_id)
+        call.status = 'failed'
+        call.error_message = reason[:1000]
+        call.save(update_fields=['status', 'error_message'])
+    except Exception:
+        logger.exception(f"Could not mark call {call_id} as failed in DB")
 
 
 @shared_task(bind=True, max_retries=0)
@@ -59,18 +74,38 @@ def analyze_call_task(
 
         logger.info(f"analyze_call_task completed successfully for call_id={call_id}")
 
+    except SoftTimeLimitExceeded:
+        logger.error(f"analyze_call_task soft time limit exceeded for call_id={call_id}")
+        _mark_failed(call_id, "Analysis timed out — the audio file may be too long.")
+        raise
+
     except Exception as exc:
         logger.exception(f"analyze_call_task failed for call_id={call_id}")
-        try:
-            from .models import Call as CallModel
-            call = CallModel.objects.get(id=call_id)
-            call.status = 'failed'
-            call.error_message = str(exc)[:1000]
-            call.save(update_fields=['status', 'error_message'])
-        except Exception:
-            pass
+        _mark_failed(call_id, str(exc))
         raise
 
     finally:
         if os.path.exists(temp_path):
             os.unlink(temp_path)
+
+
+@shared_task
+def cleanup_stuck_calls():
+    """
+    Runs every 10 minutes via Celery Beat.
+    Marks any call stuck in 'processing' for longer than the hard task
+    time limit (35 min) as 'failed'. This catches worker OOM kills and
+    any other crash that bypasses Python exception handlers.
+    """
+    from .models import Call
+
+    cutoff = timezone.now() - datetime.timedelta(minutes=35)
+    stuck = Call.objects.filter(status='processing', updated_at__lt=cutoff)
+    count = stuck.count()
+    if count:
+        stuck.update(
+            status='failed',
+            error_message='Analysis timed out — worker may have run out of memory.',
+        )
+        logger.warning(f"cleanup_stuck_calls: marked {count} stuck call(s) as failed")
+    return count

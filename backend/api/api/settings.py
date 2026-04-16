@@ -239,6 +239,13 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 1800        # 30 min hard limit
 CELERY_TASK_SOFT_TIME_LIMIT = 1500   # 25 min soft limit
 
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-stuck-calls': {
+        'task': 'api.calls.tasks.cleanup_stuck_calls',
+        'schedule': 600,  # every 10 minutes
+    },
+}
+
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
