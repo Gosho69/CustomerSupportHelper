@@ -22,6 +22,7 @@ RUN pip install --upgrade pip && \
     pip install \
       "torch==2.5.1+cpu" \
       "torchaudio==2.5.1+cpu" \
+      "torchvision==0.20.1+cpu" \
       --index-url https://download.pytorch.org/whl/cpu
 
 COPY requirements.txt .
@@ -32,6 +33,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     pip install \
       "torch==2.5.1+cpu" \
       "torchaudio==2.5.1+cpu" \
+      "torchvision==0.20.1+cpu" \
       --index-url https://download.pytorch.org/whl/cpu \
       --force-reinstall --no-deps
 

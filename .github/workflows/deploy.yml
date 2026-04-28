@@ -145,10 +145,10 @@ jobs:
             # Ensure redis is running (no-op after first deploy)
             docker compose -f docker-compose.prod.yml up -d redis
 
-            # Recreate backend, scheduler, and celery_worker with the new image.
-            # Both use the same image; celery_worker must also be restarted so it
+            # Recreate backend, scheduler, celery_worker, and celery_beat with the new image.
+            # All use the same image; every container must be restarted so it
             # picks up code changes and reruns with the updated pipeline.
-            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend scheduler celery_worker
+            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend scheduler celery_worker celery_beat
 
             # Remove dangling images to save disk space
             docker image prune -f
