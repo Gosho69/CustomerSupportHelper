@@ -72,10 +72,15 @@ def analyze_call_task(
         call.behavioral_summary = analysis_results['behavioral_summary']
         call.coaching_tips = analysis_results['coaching_tips']
         call.topic_analysis = analysis_results['topic_analysis']
+        call.vocal_analysis = analysis_results.get('vocal_analysis')
         if duration > 0:
             call.duration = duration
         call.status = 'completed'
         call.save()
+
+        # Fire-and-forget CSAT prediction — failure must NOT affect the completed call.
+        from .csat_tasks import predict_csat_for_call
+        predict_csat_for_call.delay(call.id)
 
         logger.info(f"analyze_call_task completed successfully for call_id={call_id}")
 

@@ -29,6 +29,16 @@ class Call(models.Model):
     
     coaching_tips = models.JSONField(null=True, blank=True, help_text="AI-generated coaching tips")
     topic_analysis = models.JSONField(null=True, blank=True, help_text="Topic analysis of the call")
+    vocal_analysis = models.JSONField(null=True, blank=True, help_text="Audio-level vocal stress and prosody analysis per utterance")
+
+    predicted_csat = models.FloatField(
+        null=True, blank=True,
+        help_text="Predicted CSAT score 1.0–5.0"
+    )
+    predicted_csat_label = models.CharField(
+        max_length=30, null=True, blank=True,
+        help_text="very_satisfied / satisfied / neutral / dissatisfied / very_dissatisfied"
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

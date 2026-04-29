@@ -5,6 +5,32 @@ export interface CallDetailModalProps {
   onClose: () => void;
 }
 
+export interface UtteranceStress {
+  role: string;
+  start: number;
+  end: number;
+  stress_score: number;
+  energy_db?: number;
+  zcr?: number;
+  spectral_centroid_hz?: number;
+  speech_rate_wpm?: number;
+}
+
+export interface VocalAnalysis {
+  utterance_stress: UtteranceStress[];
+  agent_stress_avg: number;
+  customer_stress_avg: number;
+  peak_stress: {
+    role: string;
+    start: number;
+    end: number;
+    stress_score: number;
+  } | null;
+  stress_escalation_detected: boolean;
+  calm_recovery_detected: boolean;
+  analysis_error: string | null;
+}
+
 export interface CallDetail {
   id: number;
   agent_name: string;
@@ -18,6 +44,7 @@ export interface CallDetail {
   behavioral_summary: any;
   coaching_tips: any;
   topic_analysis: any;
+  vocal_analysis: VocalAnalysis | null;
 }
 
 export const EMOTION_COLORS: Record<string, string> = {

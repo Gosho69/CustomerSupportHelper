@@ -10,13 +10,14 @@ import TranscriptTab from "./TranscriptTab";
 import EmotionsTab from "./EmotionsTab";
 import BehaviorTab from "./BehaviorTab";
 import CoachingTab from "./CoachingTab";
+import VoiceAnalysisTab from "./VoiceAnalysisTab";
 
 interface CallDetailModalProps {
   callId: number;
   onClose: () => void;
 }
 
-type TabId = "overview" | "transcript" | "emotions" | "behavior" | "coaching";
+type TabId = "overview" | "transcript" | "emotions" | "behavior" | "coaching" | "voice";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "overview", label: "Overview" },
@@ -24,6 +25,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "emotions", label: "Emotions" },
   { id: "behavior", label: "Behavior" },
   { id: "coaching", label: "Coaching" },
+  { id: "voice", label: "Voice Analysis" },
 ];
 
 export default function CallDetailModal({
@@ -101,6 +103,8 @@ export default function CallDetailModal({
         return <BehaviorTab call={call} />;
       case "coaching":
         return <CoachingTab call={call} />;
+      case "voice":
+        return <VoiceAnalysisTab call={call} />;
     }
   };
 

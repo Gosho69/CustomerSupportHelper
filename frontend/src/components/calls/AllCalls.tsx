@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Phone } from "lucide-react";
-import { PageHeader, SearchInput, StatsCard, Badge } from "@/components/ui";
+import { PageHeader, SearchInput, StatsCard, Badge, CSATBadge } from "@/components/ui";
 import CallDetailModal from "@/components/call-detail";
 import { callsApi } from "@/lib/api";
 
@@ -14,6 +14,8 @@ interface Call {
   sentiment: "positive" | "neutral" | "negative";
   status: "analyzed" | "pending" | "failed";
   score?: number;
+  predictedCsat?: number | null;
+  predictedCsatLabel?: string | null;
 }
 
 export default function AllCalls() {
@@ -39,6 +41,8 @@ export default function AllCalls() {
           sentiment: call.sentiment || "neutral",
           status: call.status || "analyzed",
           score: call.score,
+          predictedCsat: call.predicted_csat ?? null,
+          predictedCsatLabel: call.predicted_csat_label ?? null,
         }));
 
         setCalls(mapped);
@@ -173,6 +177,7 @@ export default function AllCalls() {
                       <Badge variant="gray" size="sm">
                         {call.sentiment}
                       </Badge>
+                      <CSATBadge score={call.predictedCsat} label={call.predictedCsatLabel} />
                     </div>
                     <p
                       className="text-sm"

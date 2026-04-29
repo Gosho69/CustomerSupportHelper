@@ -9,6 +9,7 @@ from summarization.local_summary import analyze_call as local_summary_analyze
 from summarization.gpt4_summary import analyze_call as gpt4_summary_analyze
 from coaching_tips.coaching_tips import generate
 from topic_analyzer.topic_analyzer import analyze_topics
+from vocal_analysis.vocal_analyzer import analyze_vocal_stress, _empty_result as _vocal_empty
 
 
 # Maps local model customer_tone labels to standardized emotion summary fields
@@ -120,9 +121,8 @@ def analyze_call(
     )
 
     # Run all post-transcription analyses in parallel.
-    # Emotion chain, behavioral chain, summarization, and topic extraction are
-    # independent of each other — especially valuable because the GPT-4 summary
-    # is a network call that would otherwise block the CPU-bound analyses.
+    # Emotion chain, behavioral chain, summarization, topic extraction, and
+    # vocal stress analysis are all independent of each other.
     def _run_emotion():
         results = emotion_analyze_call(transcript)
         summary = summarize_emotion_call(results)
@@ -143,16 +143,33 @@ def analyze_call(
             )
         return local_summary_analyze(transcript=transcript, checkpoint_path=local_model_path)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    def _run_vocal_analysis():
+        try:
+            return analyze_vocal_stress(audio_path, transcript)
+        except Exception as exc:
+            import traceback
+            import sys
+            print(
+                f"[Orchestrator] vocal_analysis FAILED — returning empty result.\n"
+                f"  {type(exc).__name__}: {exc}\n"
+                f"{traceback.format_exc()}",
+                file=sys.stderr,
+                flush=True,
+            )
+            return _vocal_empty(str(exc))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         emotion_future = executor.submit(_run_emotion)
         behavioral_future = executor.submit(_run_behavioral)
         summary_future = executor.submit(_run_summary)
         topics_future = executor.submit(analyze_topics, transcript)
+        vocal_future = executor.submit(_run_vocal_analysis)
 
         emotion_results, emotion_summary = emotion_future.result()
         behavioral_results, behavioral_summary = behavioral_future.result()
         call_summary = summary_future.result()
         topic_analysis = topics_future.result()
+        vocal_analysis = vocal_future.result()
 
     # Enrich emotion_summary with GPT-4 emotional assessment (sequential — needs both results)
     if summarization_model.lower() == "gpt4" and "emotional_assessment" in call_summary:
@@ -188,6 +205,7 @@ def analyze_call(
         "call_summary": call_summary,
         "coaching_tips": coaching_tips,
         "topic_analysis": topic_analysis,
+        "vocal_analysis": vocal_analysis,
     }
 
 

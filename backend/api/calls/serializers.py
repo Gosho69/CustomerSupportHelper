@@ -62,6 +62,9 @@ class CallSerializer(serializers.ModelSerializer):
             'behavioral_summary',
             'coaching_tips',
             'topic_analysis',
+            'vocal_analysis',
+            'predicted_csat',
+            'predicted_csat_label',
             'created_at',
             'updated_at'
         ]
@@ -79,6 +82,9 @@ class CallSerializer(serializers.ModelSerializer):
             'behavioral_summary',
             'coaching_tips',
             'topic_analysis',
+            'vocal_analysis',
+            'predicted_csat',
+            'predicted_csat_label',
             'created_at',
             'updated_at'
         ]
@@ -103,6 +109,8 @@ class CallListSerializer(serializers.ModelSerializer):
             'status',
             'behavioral_score',
             'skill_scores',
+            'predicted_csat',
+            'predicted_csat_label',
             'created_at'
         ]
 

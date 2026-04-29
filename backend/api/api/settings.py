@@ -252,10 +252,16 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Never prefetch more than one task per w
                                         # Critical with concurrency=1 — prevents a second
                                         # task being reserved while the first is running.
 
+from celery.schedules import crontab  # noqa: E402
+
 CELERY_BEAT_SCHEDULE = {
     'cleanup-stuck-calls': {
         'task': 'calls.tasks.cleanup_stuck_calls',
         'schedule': 600,  # every 10 minutes
+    },
+    'retrain-csat-model': {
+        'task': 'calls.csat_tasks.retrain_csat_model',
+        'schedule': crontab(day_of_week='sunday', hour=4, minute=0),
     },
 }
 

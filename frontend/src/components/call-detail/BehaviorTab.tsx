@@ -19,6 +19,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 import { CallDetail } from "./callDetailHelpers";
@@ -32,16 +33,8 @@ export default function BehaviorTab({ call }: BehaviorTabProps) {
   const bs = call.behavioral_summary || {};
 
   const wpmData = [
-    {
-      name: "Agent",
-      wpm: ba.words_per_minute?.agent_wpm || 0,
-      optimal: 150,
-    },
-    {
-      name: "Customer",
-      wpm: ba.words_per_minute?.customer_wpm || 0,
-      optimal: 150,
-    },
+    { name: "Agent",    wpm: ba.words_per_minute?.agent_wpm    || 0 },
+    { name: "Customer", wpm: ba.words_per_minute?.customer_wpm || 0 },
   ];
 
   // Backend: key_strengths = [{ type, description }], NOT strengths (plain strings)
@@ -69,11 +62,14 @@ export default function BehaviorTab({ call }: BehaviorTabProps) {
           />
           Speaking Pace (Words Per Minute)
         </h3>
+        <p className="text-xs mb-3" style={{ color: "var(--text-tertiary)" }}>
+          Green lines mark the optimal range (120–180 wpm). Above 180 = slightly fast; above 220 = too fast.
+        </p>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={wpmData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e3e8ee" />
             <XAxis dataKey="name" tick={{ fill: "#697386" }} />
-            <YAxis tick={{ fill: "#697386" }} />
+            <YAxis tick={{ fill: "#697386" }} domain={[0, 260]} />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#ffffff",
@@ -83,8 +79,13 @@ export default function BehaviorTab({ call }: BehaviorTabProps) {
               }}
             />
             <Legend />
-            <Bar dataKey="wpm" fill="#3b82f6" name="Actual WPM" />
-            <Bar dataKey="optimal" fill="#10b981" name="Optimal WPM" />
+            <ReferenceLine y={180} stroke="#10b981" strokeDasharray="4 2"
+              label={{ value: "180 wpm (upper optimal)", position: "insideTopRight",
+                       fontSize: 10, fill: "#10b981" }} />
+            <ReferenceLine y={120} stroke="#10b981" strokeDasharray="4 2"
+              label={{ value: "120 wpm (lower optimal)", position: "insideBottomRight",
+                       fontSize: 10, fill: "#10b981" }} />
+            <Bar dataKey="wpm" fill="#3b82f6" name="WPM" />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -1,5 +1,5 @@
 import { Phone } from "lucide-react";
-import { Badge } from "@/components/ui";
+import { Badge, CSATBadge } from "@/components/ui";
 
 export interface Call {
   id: number;
@@ -9,6 +9,8 @@ export interface Call {
   created_at: string;
   sentiment?: "positive" | "neutral" | "negative";
   score?: number;
+  predicted_csat?: number | null;
+  predicted_csat_label?: string | null;
 }
 
 interface CallsTableProps {
@@ -122,6 +124,7 @@ export default function CallsTable({
                         {call.sentiment}
                       </Badge>
                     )}
+                    <CSATBadge score={call.predicted_csat} label={call.predicted_csat_label} />
                   </div>
                   <p
                     className="text-sm"

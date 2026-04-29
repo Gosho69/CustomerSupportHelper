@@ -9,3 +9,4 @@ export { default as CustomSelect } from "./CustomSelect";
 export { default as InlineSelect } from "./InlineSelect";
 export { default as ConfirmDialog } from "./ConfirmDialog";
 export { ToastProvider, useToast } from "./Toast";
+export { default as CSATBadge } from "./CSATBadge";
