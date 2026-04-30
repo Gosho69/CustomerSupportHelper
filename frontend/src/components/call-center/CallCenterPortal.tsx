@@ -150,7 +150,7 @@ export default function CallCenterPortal() {
       formData.append("agent_email", agentEmail);
       const res = await mockCallCenterApi.uploadCall(formData);
       setUploadSuccess(
-        `Call uploaded (ID: ${res.data.external_id.slice(0, 8)}…). It will be automatically imported and analyzed.`
+        `Call uploaded (ID: ${res.data.external_id.slice(0, 8)}…). It will be automatically imported and analyzed.`,
       );
       setFile(null);
       setAgentEmail("");
@@ -193,9 +193,12 @@ export default function CallCenterPortal() {
               >
                 Call Center Simulator
               </h1>
-              <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
-                External platform simulation — upload recordings here and AgentSights
-                will auto-import and analyze them
+              <p
+                className="text-[13px]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                External platform simulation — upload recordings here and
+                AgentSights will auto-import and analyze them
               </p>
             </div>
           </div>
@@ -208,23 +211,38 @@ export default function CallCenterPortal() {
               >
                 {calls.length}
               </div>
-              <div className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              <div
+                className="text-[11px]"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 Total
               </div>
             </div>
             <div className="text-center">
-              <div className="text-[22px] font-bold" style={{ color: "#e68a00" }}>
+              <div
+                className="text-[22px] font-bold"
+                style={{ color: "#e68a00" }}
+              >
                 {pending}
               </div>
-              <div className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              <div
+                className="text-[11px]"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 Pending
               </div>
             </div>
             <div className="text-center">
-              <div className="text-[22px] font-bold" style={{ color: "#0caf60" }}>
+              <div
+                className="text-[22px] font-bold"
+                style={{ color: "#0caf60" }}
+              >
                 {imported}
               </div>
-              <div className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              <div
+                className="text-[11px]"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 Imported
               </div>
             </div>
@@ -272,9 +290,7 @@ export default function CallCenterPortal() {
                   color: "var(--text-primary)",
                   background: "#fafbfc",
                 }}
-                onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = "#0e7490")
-                }
+                onFocus={(e) => (e.currentTarget.style.borderColor = "#0e7490")}
                 onBlur={(e) =>
                   (e.currentTarget.style.borderColor = "var(--border)")
                 }
@@ -294,8 +310,16 @@ export default function CallCenterPortal() {
                   isDragging ? "border-cyan-500 bg-cyan-50" : ""
                 }`}
                 style={{
-                  borderColor: isDragging ? undefined : file ? "#0e7490" : "var(--border)",
-                  background: isDragging ? undefined : file ? "#f0fdff" : "#fafbfc",
+                  borderColor: isDragging
+                    ? undefined
+                    : file
+                      ? "#0e7490"
+                      : "var(--border)",
+                  background: isDragging
+                    ? undefined
+                    : file
+                      ? "#f0fdff"
+                      : "#fafbfc",
                 }}
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
@@ -328,7 +352,10 @@ export default function CallCenterPortal() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2">
-                    <Upload className="w-8 h-8" style={{ color: "var(--text-tertiary)" }} />
+                    <Upload
+                      className="w-8 h-8"
+                      style={{ color: "var(--text-tertiary)" }}
+                    />
                     <span
                       className="text-[14px] font-medium"
                       style={{ color: "var(--text-secondary)" }}
@@ -570,7 +597,10 @@ export default function CallCenterPortal() {
           className="rounded-xl border px-5 py-4 flex items-start gap-3"
           style={{ background: "#f0fdff", borderColor: "#a5f3fc" }}
         >
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#0e7490" }} />
+          <AlertCircle
+            className="w-4 h-4 mt-0.5 flex-shrink-0"
+            style={{ color: "#0e7490" }}
+          />
           <div className="text-[13px]" style={{ color: "#164e63" }}>
             <span className="font-semibold">How it works:</span> Recordings
             uploaded here simulate an external call center system. AgentSights
