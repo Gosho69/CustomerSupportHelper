@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Mic,
+  PhoneCall,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -30,6 +31,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/companies", label: "Companies", icon: Building2 },
       { href: "/dashboard/users", label: "Users", icon: Users },
+      { href: "/dashboard/call-center", label: "Call Center", icon: PhoneCall },
       { href: "/dashboard/profile", label: "Profile", icon: User },
     ],
     head_of_department: [
@@ -37,12 +39,14 @@ export default function Sidebar({ userRole }: SidebarProps) {
       { href: "/dashboard/team", label: "My Team", icon: Users },
       { href: "/dashboard/reports", label: "Reports", icon: FileText },
       { href: "/dashboard/calls", label: "All Calls", icon: Phone },
+      { href: "/dashboard/call-center", label: "Call Center", icon: PhoneCall },
       { href: "/dashboard/profile", label: "Profile", icon: User },
     ],
     agent: [
       { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { href: "/dashboard/calls", label: "My Calls", icon: Phone },
       { href: "/dashboard/upload-call", label: "Upload Call", icon: Upload },
+      { href: "/dashboard/call-center", label: "Call Center", icon: PhoneCall },
       { href: "/dashboard/my-reports", label: "My Reports", icon: FileText },
       { href: "/dashboard/profile", label: "Profile", icon: User },
     ],

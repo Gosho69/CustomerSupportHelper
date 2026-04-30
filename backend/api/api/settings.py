@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'company',
     'calls',
     'reports',
+    'mock_callcenter',
 ]
 
 MIDDLEWARE = [
@@ -220,6 +221,7 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'x-api-key',  # mock call center authentication
 ]
 
 # File upload settings
@@ -231,6 +233,12 @@ AUTH_USER_MODEL = 'users.MyUser'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# External Call Center Integration
+# Set CALL_CENTER_INTEGRATION=mock in .env to enable the simulation.
+# Set to 'disabled' (default) to disable — the sync task will no-op silently.
+CALL_CENTER_INTEGRATION = os.getenv('CALL_CENTER_INTEGRATION', 'disabled')
+MOCK_CALLCENTER_API_KEY = os.getenv('MOCK_CALLCENTER_API_KEY', 'dev-secret-key')
 
 LOGGING = {
     'version': 1,
@@ -253,6 +261,14 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Never prefetch more than one task per w
                                         # task being reserved while the first is running.
 
 from celery.schedules import crontab  # noqa: E402
+def _safe_int(value, default=300):
+    try:
+        if value is None:
+            return default
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
 
 CELERY_BEAT_SCHEDULE = {
     'cleanup-stuck-calls': {
@@ -262,6 +278,10 @@ CELERY_BEAT_SCHEDULE = {
     'retrain-csat-model': {
         'task': 'calls.csat_tasks.retrain_csat_model',
         'schedule': crontab(day_of_week='sunday', hour=4, minute=0),
+    },
+    'sync-external-calls': {
+        'task': 'calls.integration_tasks.sync_external_calls',
+        'schedule': _safe_int(os.getenv('CALL_SYNC_INTERVAL_SECONDS'), 300),  # every 5 minutes
     },
 }
 

@@ -33,6 +33,8 @@ urlpatterns = [
     path('api/companies/', include('company.urls')),
     path('api/calls/', include('calls.urls')),
     path('api/reports/', include('reports.urls')),
+    # Mock call center simulation — authenticated via X-API-Key header
+    path('api/mock-callcenter/', include('mock_callcenter.urls')),
 ]
 
 # Serve media files in development

@@ -91,11 +91,23 @@ class AgentCallsListView(generics.ListAPIView):
     serializer_class = CallListSerializer
 
     def get_queryset(self):
+        # Only surface calls whose analysis has fully finished.
+        # pending/processing calls are still being analyzed and have no meaningful
+        # results yet; showing them would confuse agents.
+        # failed calls are included so agents know when a recording couldn't be processed.
+        VISIBLE_STATUSES = ['completed', 'failed']
+
         if self.request.user.role == 'agent':
-            return Call.objects.filter(agent=self.request.user).order_by('-call_date')
+            return Call.objects.filter(
+                agent=self.request.user,
+                status__in=VISIBLE_STATUSES,
+            ).order_by('-call_date')
         elif self.request.user.role == 'head_of_department':
             subordinates = self.request.user.subordinates.all()
-            return Call.objects.filter(agent__in=subordinates).order_by('-call_date')
+            return Call.objects.filter(
+                agent__in=subordinates,
+                status__in=VISIBLE_STATUSES,
+            ).order_by('-call_date')
         return Call.objects.none()
 
 

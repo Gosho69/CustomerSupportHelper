@@ -171,4 +171,46 @@ export const companiesApi = {
     }),
 };
 
+// Mock Call Center API — separate axios instance authenticated with X-API-Key.
+// This simulates an external call center platform. The API key is set via
+// NEXT_PUBLIC_MOCK_API_KEY (defaults to 'dev-secret-key' for local development).
+const MOCK_API_KEY =
+  process.env.NEXT_PUBLIC_MOCK_API_KEY || "dev-secret-key";
+
+const MOCK_BASE_URL =
+  (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api") +
+  "/mock-callcenter";
+
+export const mockApi = axios.create({
+  baseURL: MOCK_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+    "X-API-Key": MOCK_API_KEY,
+  },
+});
+
+// Strip Content-Type for multipart uploads
+mockApi.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
+  return config;
+});
+
+export const mockCallCenterApi = {
+  // Upload a new call recording to the mock call center
+  uploadCall: (formData: FormData) =>
+    mockApi.post("/calls/upload/", formData),
+
+  // Get all calls (optionally filter by analyzed status)
+  getCalls: (analyzed?: boolean) =>
+    mockApi.get("/calls/", {
+      params: analyzed !== undefined ? { analyzed: String(analyzed) } : {},
+    }),
+
+  // Get unanalyzed calls only
+  getUnanalyzedCalls: () =>
+    mockApi.get("/calls/", { params: { analyzed: "false" } }),
+};
+
 export default api;
