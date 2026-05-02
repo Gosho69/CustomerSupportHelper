@@ -4,17 +4,25 @@
 #   1. docker compose up -d
 #      (starts Redis on localhost:6379)
 #
-#   2. In a separate terminal — start the Celery worker:
+#   2. In a separate terminal — Celery worker (ALWAYS use the venv binary):
 #      cd backend/api
-#      celery -A api worker --loglevel=info --concurrency=1
+#      ../../venv/bin/celery -A api worker --loglevel=info --concurrency=1 --max-tasks-per-child=1
 #
-#   3. In a separate terminal — start Django:
+#   3. In a separate terminal — Celery Beat scheduler:
+#      cd backend/api
+#      ../../venv/bin/celery -A api beat --loglevel=info
+#      (required for auto-sync of call center recordings every CALL_SYNC_INTERVAL_SECONDS)
+#
+#   4. In a separate terminal — Django:
 #      cd backend/api
 #      python manage.py runserver
 #
-#   4. In a separate terminal — start the frontend:
+#   5. In a separate terminal — frontend:
 #      cd frontend
 #      npm run dev
+#
+# ⚠️  Always use the venv Celery binary (../../venv/bin/celery), NOT the system
+#     celery. The system celery won't have whisperx, pyannote, or any ML packages.
 #
 # The frontend/.env.local already points to http://localhost:8000/api,
 # so local dev will use your local Django server, not production.

@@ -84,7 +84,7 @@ services:
       redis:
         condition: service_healthy
       backend:
-        condition: service_started
+        condition: service_healthy
 
   # ─────────────────────────────────────────────
   # Scheduler — runs auto_generate_reports daily at 23:55
@@ -116,7 +116,7 @@ services:
       redis:
         condition: service_healthy
       backend:
-        condition: service_started
+        condition: service_healthy
 
   # ─────────────────────────────────────────────
   # Ollama — local LLM for coaching tips
