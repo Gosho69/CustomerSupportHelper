@@ -10,8 +10,15 @@ import {
   ExternalLink,
   AlertCircle,
   PhoneCall,
+  BarChart2,
+  X,
 } from "lucide-react";
-import { mockCallCenterApi } from "@/lib/api";
+import { callsApi, mockCallCenterApi } from "@/lib/api";
+import type {
+  BulkUploadCallResult,
+  BulkUploadResponse,
+  QueueStatus,
+} from "@/lib/api";
 
 interface ExternalCall {
   external_id: string;
@@ -55,6 +62,10 @@ function truncateId(id: string): string {
   return id.slice(0, 8) + "…";
 }
 
+function formatBytes(bytes: number): string {
+  return (bytes / 1024 / 1024).toFixed(2) + " MB";
+}
+
 export default function CallCenterPortal() {
   const [calls, setCalls] = useState<ExternalCall[]>([]);
   const [loadingCalls, setLoadingCalls] = useState(true);
@@ -62,12 +73,18 @@ export default function CallCenterPortal() {
 
   // Upload form state
   const [agentEmail, setAgentEmail] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileResults, setFileResults] = useState<
+    Map<string, BulkUploadCallResult>
+  >(new Map());
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Queue status state
+  const [queueStatus, setQueueStatus] = useState<QueueStatus | null>(null);
 
   const fetchCalls = useCallback(async (silent = false) => {
     if (!silent) setLoadingCalls(true);
@@ -83,12 +100,25 @@ export default function CallCenterPortal() {
     }
   }, []);
 
+  const fetchQueueStatus = useCallback(async () => {
+    try {
+      const res = await callsApi.getQueueStatus();
+      setQueueStatus(res.data);
+    } catch {
+      // non-critical — keep stale data
+    }
+  }, []);
+
   // Initial load + auto-refresh every 10 s
   useEffect(() => {
     fetchCalls();
-    const interval = setInterval(() => fetchCalls(true), 10_000);
+    fetchQueueStatus();
+    const interval = setInterval(() => {
+      fetchCalls(true);
+      fetchQueueStatus();
+    }, 10_000);
     return () => clearInterval(interval);
-  }, [fetchCalls]);
+  }, [fetchCalls, fetchQueueStatus]);
 
   // --- File handling ---
   function validateFile(f: File): string | null {
@@ -103,14 +133,26 @@ export default function CallCenterPortal() {
     return null;
   }
 
-  function handleFilePick(f: File) {
-    const err = validateFile(f);
-    if (err) {
-      setUploadError(err);
-      return;
-    }
-    setUploadError(null);
-    setFile(f);
+  function handleFilePick(newFiles: FileList | File[]) {
+    const valid: File[] = [];
+    const errors: string[] = [];
+    Array.from(newFiles).forEach((f) => {
+      const err = validateFile(f);
+      if (err) errors.push(`${f.name}: ${err}`);
+      else valid.push(f);
+    });
+    if (errors.length) setUploadError(errors.join("\n"));
+    else setUploadError(null);
+    if (valid.length) setFiles((prev) => [...prev, ...valid]);
+  }
+
+  function removeFile(target: File) {
+    setFiles((prev) => prev.filter((f) => f !== target));
+    setFileResults((prev) => {
+      const next = new Map(prev);
+      next.delete(target.name);
+      return next;
+    });
   }
 
   function onDragOver(e: React.DragEvent) {
@@ -125,42 +167,61 @@ export default function CallCenterPortal() {
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) handleFilePick(dropped);
+    if (e.dataTransfer.files.length) handleFilePick(e.dataTransfer.files);
   }
 
   function onFileInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = e.target.files?.[0];
-    if (picked) handleFilePick(picked);
+    if (e.target.files?.length) handleFilePick(e.target.files);
     e.target.value = "";
   }
 
   // --- Upload ---
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!file || !agentEmail) return;
+    if (files.length === 0 || !agentEmail) return;
 
     setUploading(true);
     setUploadError(null);
     setUploadSuccess(null);
+    setFileResults(new Map());
 
     try {
       const formData = new FormData();
-      formData.append("audio_file", file);
       formData.append("agent_email", agentEmail);
-      const res = await mockCallCenterApi.uploadCall(formData);
-      setUploadSuccess(
-        `Call uploaded (ID: ${res.data.external_id.slice(0, 8)}…). It will be automatically imported and analyzed.`,
-      );
-      setFile(null);
-      setAgentEmail("");
-      // Refresh the list to show the new entry
-      await fetchCalls(true);
-    } catch (err: any) {
+      files.forEach((f) => formData.append("audio_files", f));
+
+      const res = await mockCallCenterApi.bulkUploadCalls(formData);
+      const data: BulkUploadResponse = res.data;
+
+      const resultMap = new Map<string, BulkUploadCallResult>();
+      data.calls.forEach((r) => resultMap.set(r.filename, r));
+      setFileResults(resultMap);
+
+      if (data.failed === 0) {
+        setUploadSuccess(
+          `${data.imported} call${data.imported > 1 ? "s" : ""} queued for analysis. Processing will begin within seconds.`,
+        );
+        setFiles([]);
+        setAgentEmail("");
+      } else if (data.imported > 0) {
+        setUploadSuccess(
+          `${data.imported} of ${data.total} calls queued. ${data.failed} failed — see details below.`,
+        );
+      } else {
+        setUploadError(
+          `All ${data.total} files failed to upload. See details below.`,
+        );
+      }
+
+      await Promise.all([fetchCalls(true), fetchQueueStatus()]);
+    } catch (err: unknown) {
+      const e = err as {
+        response?: { data?: Record<string, string[]> };
+      };
       const detail =
-        err?.response?.data?.audio_file?.[0] ||
-        err?.response?.data?.agent_email?.[0] ||
-        err?.response?.data?.detail ||
+        e?.response?.data?.agent_email?.[0] ||
+        e?.response?.data?.audio_files?.[0] ||
+        (e?.response?.data?.detail as string | undefined) ||
         "Upload failed. Check the API key and backend connection.";
       setUploadError(detail);
     } finally {
@@ -265,7 +326,7 @@ export default function CallCenterPortal() {
               className="text-[14px] font-semibold"
               style={{ color: "var(--text-primary)" }}
             >
-              Upload Call Recording
+              Upload Call Recordings
             </span>
           </div>
 
@@ -303,21 +364,23 @@ export default function CallCenterPortal() {
                 className="block text-[13px] font-medium mb-1.5"
                 style={{ color: "var(--text-primary)" }}
               >
-                Audio File
+                Audio Files
               </label>
+
+              {/* Drop target */}
               <div
-                className={`border-2 border-dashed rounded-lg p-8 transition-all text-center cursor-pointer ${
+                className={`border-2 border-dashed rounded-lg p-6 transition-all text-center cursor-pointer ${
                   isDragging ? "border-cyan-500 bg-cyan-50" : ""
                 }`}
                 style={{
                   borderColor: isDragging
                     ? undefined
-                    : file
+                    : files.length > 0
                       ? "#0e7490"
                       : "var(--border)",
                   background: isDragging
                     ? undefined
-                    : file
+                    : files.length > 0
                       ? "#f0fdff"
                       : "#fafbfc",
                 }}
@@ -329,58 +392,130 @@ export default function CallCenterPortal() {
                 <input
                   ref={inputRef}
                   type="file"
+                  multiple
                   className="hidden"
                   accept={ALLOWED_EXTS.join(",")}
                   onChange={onFileInput}
                 />
-                {file ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <Phone className="w-8 h-8" style={{ color: "#0e7490" }} />
-                    <span
-                      className="text-[14px] font-semibold mt-1"
-                      style={{ color: "#0e7490" }}
-                    >
-                      {file.name}
-                    </span>
-                    <span
-                      className="text-[12px]"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      {(file.size / 1024 / 1024).toFixed(2)} MB — click to
-                      change
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload
-                      className="w-8 h-8"
-                      style={{ color: "var(--text-tertiary)" }}
-                    />
-                    <span
-                      className="text-[14px] font-medium"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
-                      Drop audio file here or{" "}
-                      <span style={{ color: "#0e7490" }}>browse</span>
-                    </span>
-                    <span
-                      className="text-[12px]"
-                      style={{ color: "var(--text-tertiary)" }}
-                    >
-                      WAV, MP3, M4A, FLAC, OGG, OPUS · max 100 MB
-                    </span>
-                  </div>
-                )}
+                <div className="flex flex-col items-center gap-2">
+                  <Upload
+                    className="w-6 h-6"
+                    style={{
+                      color: files.length > 0 ? "#0e7490" : "var(--text-tertiary)",
+                    }}
+                  />
+                  <span
+                    className="text-[13px] font-medium"
+                    style={{
+                      color: files.length > 0 ? "#0e7490" : "var(--text-secondary)",
+                    }}
+                  >
+                    {files.length > 0
+                      ? `${files.length} file${files.length > 1 ? "s" : ""} selected — drop more or click to add`
+                      : <>Drop audio files here or <span style={{ color: "#0e7490" }}>browse</span></>}
+                  </span>
+                  <span
+                    className="text-[12px]"
+                    style={{ color: "var(--text-tertiary)" }}
+                  >
+                    WAV, MP3, M4A, FLAC, OGG, OPUS · max 100 MB each · up to 50
+                    files
+                  </span>
+                </div>
               </div>
+
+              {/* File list */}
+              {files.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  {files.map((f) => {
+                    const result = fileResults.get(f.name);
+                    return (
+                      <div
+                        key={f.name + f.size}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg border text-[13px]"
+                        style={{
+                          borderColor: result?.error
+                            ? "#fca5a5"
+                            : result?.external_id
+                              ? "#86efac"
+                              : "var(--border)",
+                          background: result?.error
+                            ? "#fff1f2"
+                            : result?.external_id
+                              ? "#f0fdf4"
+                              : "#fafbfc",
+                        }}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Phone
+                            className="w-3.5 h-3.5 flex-shrink-0"
+                            style={{
+                              color: result?.error
+                                ? "#df1b41"
+                                : result?.external_id
+                                  ? "#0caf60"
+                                  : "#0e7490",
+                            }}
+                          />
+                          <span
+                            className="truncate font-medium"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {f.name}
+                          </span>
+                          <span
+                            className="flex-shrink-0 text-[12px]"
+                            style={{ color: "var(--text-tertiary)" }}
+                          >
+                            {formatBytes(f.size)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                          {result?.external_id && (
+                            <span
+                              className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                              style={{ background: "#dcfce7", color: "#0caf60" }}
+                            >
+                              Queued · {truncateId(result.external_id)}
+                            </span>
+                          )}
+                          {result?.error && (
+                            <span
+                              className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                              style={{ background: "#fff1f2", color: "#df1b41" }}
+                            >
+                              {result.error}
+                            </span>
+                          )}
+                          {!result && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFile(f);
+                              }}
+                              className="p-0.5 rounded hover:bg-[var(--hover-bg)] transition-colors"
+                              style={{ color: "var(--text-tertiary)" }}
+                              title="Remove file"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Feedback messages */}
             {uploadError && (
               <div
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px]"
+                className="flex items-start gap-2 px-3 py-2 rounded-lg text-[13px] whitespace-pre-line"
                 style={{ background: "#fff1f2", color: "#df1b41" }}
               >
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 {uploadError}
               </div>
             )}
@@ -396,14 +531,121 @@ export default function CallCenterPortal() {
 
             <button
               type="submit"
-              disabled={!file || !agentEmail || uploading}
+              disabled={files.length === 0 || !agentEmail || uploading}
               className="w-full py-2.5 rounded-lg text-[14px] font-semibold text-white transition-opacity disabled:opacity-50"
               style={{ background: "#0e7490" }}
             >
-              {uploading ? "Uploading…" : "Upload to Call Center"}
+              {uploading
+                ? `Uploading ${files.length} file${files.length > 1 ? "s" : ""}…`
+                : `Upload ${files.length > 0 ? files.length + " " : ""}Call${files.length !== 1 ? "s" : ""} to Call Center`}
             </button>
           </form>
         </div>
+
+        {/* ── Processing queue status ── */}
+        {queueStatus !== null && (
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{ background: "#ffffff", borderColor: "var(--border)" }}
+          >
+            <div
+              className="px-6 py-4 border-b flex items-center gap-2"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <BarChart2 className="w-4 h-4" style={{ color: "#0e7490" }} />
+              <span
+                className="text-[14px] font-semibold"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Processing Queue
+              </span>
+              <span
+                className="text-[12px] ml-auto"
+                style={{ color: "var(--text-tertiary)" }}
+              >
+                updates every 10 s
+              </span>
+            </div>
+            <div className="px-6 py-4 grid grid-cols-4 gap-4">
+              {/* Awaiting import */}
+              <div
+                className="rounded-lg px-4 py-3 flex flex-col gap-1"
+                style={{ background: "#fffbeb" }}
+              >
+                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#e68a00" }}>
+                  Awaiting Import
+                </span>
+                <span className="text-[28px] font-bold leading-none" style={{ color: "#e68a00" }}>
+                  {queueStatus.awaiting_import}
+                </span>
+                <span className="text-[11px]" style={{ color: "#92400e" }}>
+                  {queueStatus.in_queue > 0
+                    ? `+ ${queueStatus.in_queue} in analysis queue`
+                    : "in call center, not imported"}
+                </span>
+              </div>
+              {/* Processing */}
+              <div
+                className="rounded-lg px-4 py-3 flex flex-col gap-1"
+                style={{ background: "#eff6ff" }}
+              >
+                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#2563eb" }}>
+                  Processing
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[28px] font-bold leading-none" style={{ color: "#2563eb" }}>
+                    {queueStatus.processing}
+                  </span>
+                  {queueStatus.processing > 0 && (
+                    <RefreshCw className="w-4 h-4 animate-spin" style={{ color: "#2563eb" }} />
+                  )}
+                </div>
+                <span className="text-[11px]" style={{ color: "#1e40af" }}>
+                  being analyzed now
+                </span>
+              </div>
+              {/* Completed today */}
+              <div
+                className="rounded-lg px-4 py-3 flex flex-col gap-1"
+                style={{ background: "#f0fdf4" }}
+              >
+                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#0caf60" }}>
+                  Completed Today
+                </span>
+                <span className="text-[28px] font-bold leading-none" style={{ color: "#0caf60" }}>
+                  {queueStatus.completed_today}
+                </span>
+                <span className="text-[11px]" style={{ color: "#166534" }}>
+                  analysis done
+                </span>
+              </div>
+              {/* Failed today */}
+              <div
+                className="rounded-lg px-4 py-3 flex flex-col gap-1"
+                style={{ background: queueStatus.failed_today > 0 ? "#fff1f2" : "#fafbfc" }}
+              >
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: queueStatus.failed_today > 0 ? "#df1b41" : "var(--text-tertiary)" }}
+                >
+                  Failed Today
+                </span>
+                <span
+                  className="text-[28px] font-bold leading-none"
+                  style={{ color: queueStatus.failed_today > 0 ? "#df1b41" : "var(--text-tertiary)" }}
+                >
+                  {queueStatus.failed_today}
+                </span>
+                <span
+                  className="text-[11px]"
+                  style={{ color: queueStatus.failed_today > 0 ? "#9f1239" : "var(--text-tertiary)" }}
+                >
+                  {queueStatus.failed_today > 0 ? "check call logs" : "no failures"}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Calls table ── */}
         <div
@@ -471,7 +713,7 @@ export default function CallCenterPortal() {
                 className="text-[13px]"
                 style={{ color: "var(--text-tertiary)" }}
               >
-                Upload a recording above to get started
+                Upload recordings above to get started
               </p>
             </div>
           ) : (
@@ -602,10 +844,11 @@ export default function CallCenterPortal() {
             style={{ color: "#0e7490" }}
           />
           <div className="text-[13px]" style={{ color: "#164e63" }}>
-            <span className="font-semibold">How it works:</span> Recordings
-            uploaded here simulate an external call center system. AgentSights
-            automatically polls for new calls every 5 minutes and runs the full
-            analysis pipeline. Pending calls become available in{" "}
+            <span className="font-semibold">How it works:</span> Upload one or
+            many recordings at once — each batch is queued immediately and
+            AgentSights starts processing within seconds. Calls are analyzed
+            one by one to keep resource usage predictable. Analyzed calls appear
+            in{" "}
             <a
               href="/dashboard/calls"
               className="underline font-medium"
@@ -613,7 +856,7 @@ export default function CallCenterPortal() {
             >
               My Calls / All Calls
             </a>{" "}
-            once imported. The sync interval can be adjusted via{" "}
+            once complete. The polling interval can be adjusted via{" "}
             <code
               className="px-1 py-0.5 rounded text-[12px]"
               style={{ background: "#cffafe" }}

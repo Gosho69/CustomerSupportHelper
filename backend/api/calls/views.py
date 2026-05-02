@@ -1,4 +1,5 @@
 import os
+from django.utils import timezone
 from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -122,3 +123,32 @@ class CallDetailView(generics.RetrieveAPIView):
             subordinates = self.request.user.subordinates.all()
             return Call.objects.filter(agent__in=subordinates)
         return Call.objects.none()
+
+
+class QueueStatusView(APIView):
+    """
+    GET /api/calls/queue-status/
+
+    Returns queue depth and today's processing stats scoped to the mock callcenter
+    workflow. Used by the Call Center Portal so operators can see live progress.
+
+    Fields:
+      awaiting_import  — ExternalCall records not yet imported (analyzed=False).
+                         This is the true "pending" count for the mock callcenter page.
+      in_queue         — Call records imported from the callcenter but not yet analyzed.
+      processing       — Call records currently being analyzed by the Celery worker.
+      completed_today  — Calls that finished analysis today (UTC).
+      failed_today     — Calls that failed analysis today (UTC).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from mock_callcenter.models import ExternalCall
+        today = timezone.now().date()
+        return Response({
+            'awaiting_import': ExternalCall.objects.filter(analyzed=False).count(),
+            'in_queue':        Call.objects.filter(status='pending', external_source__isnull=False).count(),
+            'processing':      Call.objects.filter(status='processing').count(),
+            'completed_today': Call.objects.filter(status='completed', updated_at__date=today).count(),
+            'failed_today':    Call.objects.filter(status='failed',    updated_at__date=today).count(),
+        })

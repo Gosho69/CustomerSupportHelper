@@ -8,6 +8,10 @@
 #      cd backend/api
 #      ../../venv/bin/celery -A api worker --loglevel=info --concurrency=1 --max-tasks-per-child=1
 #
+#      ⚠️  Queue isolation: if your local .env points to the same Redis as production,
+#      set CELERY_TASK_DEFAULT_QUEUE=celery_dev in backend/.env so local tasks do NOT
+#      land in the prod queue and block the production worker.
+#
 #   3. In a separate terminal — Celery Beat scheduler:
 #      cd backend/api
 #      ../../venv/bin/celery -A api beat --loglevel=info

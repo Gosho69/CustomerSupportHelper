@@ -1,5 +1,27 @@
 import axios from "axios";
 
+export interface BulkUploadCallResult {
+  external_id?: string;
+  filename: string;
+  status?: "pending";
+  error?: string;
+}
+
+export interface BulkUploadResponse {
+  total: number;
+  imported: number;
+  failed: number;
+  calls: BulkUploadCallResult[];
+}
+
+export interface QueueStatus {
+  awaiting_import: number;
+  in_queue: number;
+  processing: number;
+  completed_today: number;
+  failed_today: number;
+}
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -88,6 +110,8 @@ export const callsApi = {
   getCallDetail: (id: number) => api.get(`/calls/${id}/`),
 
   getCallStatus: (id: number) => api.get(`/calls/${id}/status/`),
+
+  getQueueStatus: () => api.get("/calls/queue-status/"),
 };
 
 // Reports API functions
@@ -201,6 +225,10 @@ export const mockCallCenterApi = {
   // Upload a new call recording to the mock call center
   uploadCall: (formData: FormData) =>
     mockApi.post("/calls/upload/", formData),
+
+  // Upload multiple call recordings in a single request
+  bulkUploadCalls: (formData: FormData) =>
+    mockApi.post("/calls/bulk-upload/", formData),
 
   // Get all calls (optionally filter by analyzed status)
   getCalls: (analyzed?: boolean) =>

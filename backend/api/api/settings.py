@@ -260,6 +260,12 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Never prefetch more than one task per w
                                         # Critical with concurrency=1 — prevents a second
                                         # task being reserved while the first is running.
 
+# Queue isolation — prevents local dev tasks from blocking the production worker.
+# Each environment sends tasks to its own named queue and the worker only consumes
+# from that queue.  Set CELERY_TASK_DEFAULT_QUEUE=celery_dev in your local .env
+# and leave it at the default "celery" on production.
+CELERY_TASK_DEFAULT_QUEUE = os.getenv('CELERY_TASK_DEFAULT_QUEUE', 'celery')
+
 from celery.schedules import crontab  # noqa: E402
 def _safe_int(value, default=300):
     try:

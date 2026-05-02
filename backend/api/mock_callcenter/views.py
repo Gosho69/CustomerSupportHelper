@@ -8,9 +8,16 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from rest_framework import serializers as drf_serializers
+
 from .models import ExternalCall
 from .permissions import ApiKeyPermission
-from .serializers import ExternalCallListSerializer, ExternalCallUploadSerializer
+from .serializers import (
+    ExternalCallListSerializer,
+    ExternalCallUploadSerializer,
+    MAX_BATCH_UPLOAD_SIZE,
+    validate_single_audio_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +67,103 @@ class ExternalCallUploadView(APIView):
                 ),
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class ExternalCallBulkUploadView(APIView):
+    """
+    POST /api/mock-callcenter/calls/bulk-upload/
+
+    Upload multiple call recordings in a single request. Each file is validated
+    and stored independently so a single bad file does not reject the whole batch.
+    After any successful imports the sync task is triggered immediately (countdown=5s)
+    rather than waiting for the next Celery Beat cycle.
+
+    Required fields (multipart/form-data):
+      - audio_files: one or more recordings (.wav, .mp3, .m4a, .flac, .ogg, .opus; max 100 MB each)
+      - agent_email: email address of the agent who handled all calls in this batch
+    """
+    authentication_classes = []
+    permission_classes = [ApiKeyPermission]
+
+    def post(self, request):
+        from calls.integration_tasks import sync_external_calls
+
+        # Validate agent_email manually — DRF's ListField(child=FileField()) does not
+        # reliably validate InMemoryUploadedFile objects when passed through a data dict,
+        # so we skip the BulkUploadSerializer and validate directly.
+        agent_email = (request.data.get('agent_email') or '').strip()
+        if not agent_email:
+            return Response(
+                {'agent_email': ['This field is required.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            agent_email = drf_serializers.EmailField().run_validation(agent_email)
+        except drf_serializers.ValidationError as exc:
+            return Response({'agent_email': exc.detail}, status=status.HTTP_400_BAD_REQUEST)
+
+        raw_files = request.FILES.getlist('audio_files')
+        if not raw_files:
+            return Response(
+                {'audio_files': ['No files provided.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(raw_files) > MAX_BATCH_UPLOAD_SIZE:
+            return Response(
+                {'audio_files': [f'Too many files. Maximum is {MAX_BATCH_UPLOAD_SIZE} per request.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        imported = []
+        failed = []
+
+        for f in raw_files:
+            try:
+                validate_single_audio_file(f)
+            except Exception as exc:
+                # exc.detail is a list when raised via serializers.ValidationError
+                error_msg = exc.detail[0] if hasattr(exc, 'detail') else str(exc)
+                failed.append({'filename': f.name, 'error': str(error_msg)})
+                continue
+
+            try:
+                ext_call = ExternalCall(
+                    agent_email=agent_email,
+                    call_started_at=timezone.now(),
+                )
+                ext_call.audio_file.save(f.name, f, save=False)
+                ext_call.save()
+                imported.append({
+                    'external_id': str(ext_call.external_id),
+                    'filename': f.name,
+                    'status': 'pending',
+                })
+                logger.info(
+                    f"ExternalCallBulkUploadView: created {ext_call.external_id} "
+                    f"for agent {agent_email} ({f.name})"
+                )
+            except Exception as exc:
+                logger.error(f"ExternalCallBulkUploadView: DB save failed for {f.name}: {exc}")
+                failed.append({'filename': f.name, 'error': 'Internal error saving record.'})
+
+        if imported:
+            try:
+                sync_external_calls.apply_async(countdown=5)
+                logger.info(
+                    f"ExternalCallBulkUploadView: triggered sync_external_calls "
+                    f"(countdown=5s) after {len(imported)} imports"
+                )
+            except Exception as exc:
+                logger.warning(f"ExternalCallBulkUploadView: could not trigger sync task: {exc}")
+
+        return Response(
+            {
+                'total': len(raw_files),
+                'imported': len(imported),
+                'failed': len(failed),
+                'calls': imported + failed,
+            },
+            status=status.HTTP_201_CREATED if imported else status.HTTP_400_BAD_REQUEST,
         )
 
 

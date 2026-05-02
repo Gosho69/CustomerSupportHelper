@@ -1,8 +1,26 @@
+import os
+
 from rest_framework import serializers
+
 from .models import ExternalCall
 
 ALLOWED_EXTENSIONS = {'.wav', '.mp3', '.m4a', '.flac', '.ogg', '.opus'}
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
+MAX_BATCH_UPLOAD_SIZE = int(os.environ.get('MAX_BATCH_UPLOAD_SIZE', 50))
+
+
+def validate_single_audio_file(value):
+    ext = os.path.splitext(value.name)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise serializers.ValidationError(
+            f"Unsupported file format '{ext}'. "
+            f"Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+        )
+    if value.size > MAX_UPLOAD_SIZE:
+        raise serializers.ValidationError(
+            f"File too large ({value.size / 1024 / 1024:.1f} MB). Maximum is 100 MB."
+        )
+    return value
 
 
 class ExternalCallUploadSerializer(serializers.Serializer):
@@ -10,16 +28,17 @@ class ExternalCallUploadSerializer(serializers.Serializer):
     agent_email = serializers.EmailField()
 
     def validate_audio_file(self, value):
-        import os
-        ext = os.path.splitext(value.name)[1].lower()
-        if ext not in ALLOWED_EXTENSIONS:
+        return validate_single_audio_file(value)
+
+
+class BulkUploadSerializer(serializers.Serializer):
+    audio_files = serializers.ListField(child=serializers.FileField(), allow_empty=False)
+    agent_email = serializers.EmailField()
+
+    def validate_audio_files(self, value):
+        if len(value) > MAX_BATCH_UPLOAD_SIZE:
             raise serializers.ValidationError(
-                f"Unsupported file format '{ext}'. "
-                f"Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
-            )
-        if value.size > MAX_UPLOAD_SIZE:
-            raise serializers.ValidationError(
-                f"File too large ({value.size / 1024 / 1024:.1f} MB). Maximum is 100 MB."
+                f"Too many files. Maximum is {MAX_BATCH_UPLOAD_SIZE} per request."
             )
         return value
 
