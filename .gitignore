@@ -1,12 +1,40 @@
+# ── Backend ───────────────────────────────────────────────────────
 /backend/.env
 /backend/venv/
 backend/AI_modules/model/
-media/
+
+# Python bytecode
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-**/__pycache__/
-venv/
+
+# Celery beat state files
+celerybeat-schedule
+celerybeat-schedule-wal
+celerybeat-schedule-shm
+
+# ── Frontend ──────────────────────────────────────────────────────
+frontend/.env
+frontend/.env.local
+frontend/.next/
+frontend/node_modules/
+
+# ── Misc ──────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Django media uploads (user files, never commit)
+media/
+
+# Internal docs / scratch
 plan.md
