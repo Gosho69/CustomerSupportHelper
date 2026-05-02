@@ -141,7 +141,7 @@ def sync_external_calls(self):
             analyze_call_task.delay(
                 call_id=call.id,
                 temp_path=temp_path,
-                summarization_model='gpt4',
+                summarization_model='local',
                 whisper_model_size=whisper_model_size,
                 local_model_path=local_model_path,
                 gpt4_max_tokens=1500,

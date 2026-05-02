@@ -67,6 +67,8 @@ def create_report_from_metrics(
         professionalism_score=metrics["behavioral_metrics"]["professionalism"],
         problem_solving_score=metrics["behavioral_metrics"]["problem_solving"],
         behavioral_trend=metrics["behavioral_metrics"]["trend"],
+        # CSAT
+        average_csat_score=metrics.get("csat_metrics", {}).get("average_csat"),
         # Topics & consistency & comparison
         most_common_topics=metrics["topic_metrics"]["most_common_topics"],
         performance_consistency_score=metrics["consistency"]["consistency_score"],

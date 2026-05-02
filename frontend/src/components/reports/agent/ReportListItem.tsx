@@ -7,6 +7,16 @@ import {
   Eye,
 } from "lucide-react";
 
+export interface WeeklyScore {
+  week: number;
+  label: string;
+  start_date: string;
+  end_date: string;
+  score: number | null;
+  calls: number;
+  consistency?: number | null;
+}
+
 export interface Report {
   id: number;
   type: "weekly" | "monthly";
@@ -18,7 +28,25 @@ export interface Report {
   avgDuration: number;
   strengths: string[];
   improvements: string[];
+  recommendations: string[];
   topSkills?: { skill: string; score: number }[];
+  // Sentiment
+  positivePercent?: number;
+  negativePercent?: number;
+  neutralPercent?: number;
+  // Topics
+  topics?: { topic: string; count: number }[];
+  // Quality
+  consistencyScore?: number;
+  percentile?: number;
+  csatScore?: number;
+  // Narrative
+  summary?: string;
+  executiveSummary?: string;
+  rating?: string;
+  aiGenerated?: boolean;
+  // Monthly weekly breakdown
+  weeklyScores?: WeeklyScore[];
 }
 
 interface ReportListItemProps {

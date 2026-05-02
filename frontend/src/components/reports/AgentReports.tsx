@@ -20,6 +20,22 @@ function mapReport(r: any): Report {
       : "";
   const start = fmt(r.start_date);
   const end = fmt(r.end_date);
+
+  const positivePercent = r.positive_calls_percentage ?? 0;
+  const negativePercent = r.negative_calls_percentage ?? 0;
+  const neutralPercent = Math.max(0, 100 - positivePercent - negativePercent);
+
+  // Build topics array from most_common_topics dict
+  const topics: { topic: string; count: number }[] = r.most_common_topics
+    ? Object.entries(r.most_common_topics as Record<string, number>)
+        .map(([topic, count]) => ({ topic, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+    : [];
+
+  // Weekly scores for monthly trend chart
+  const weeklyScores = r.weekly_analysis?.weekly_scores ?? undefined;
+
   return {
     id: r.id,
     type: (r.report_type as "weekly" | "monthly") || "weekly",
@@ -41,13 +57,10 @@ function mapReport(r: any): Report {
     totalCalls: r.total_calls ?? 0,
     avgDuration: r.average_call_duration ?? 0,
     strengths: Array.isArray(r.strengths) ? r.strengths : [],
-    improvements: Array.isArray(r.weaknesses)
-      ? r.weaknesses
-      : Array.isArray(r.recommendations)
-        ? r.recommendations
-        : [],
+    improvements: Array.isArray(r.weaknesses) ? r.weaknesses : [],
+    recommendations: Array.isArray(r.recommendations) ? r.recommendations : [],
     topSkills:
-      r.empathy_score != null
+      r.empathy_score != null || r.professionalism_score != null
         ? [
             {
               skill: "Empathy",
@@ -63,6 +76,18 @@ function mapReport(r: any): Report {
             },
           ]
         : undefined,
+    positivePercent: Math.round(positivePercent),
+    negativePercent: Math.round(negativePercent),
+    neutralPercent: Math.round(neutralPercent),
+    topics: topics.length > 0 ? topics : undefined,
+    consistencyScore: r.performance_consistency_score ?? undefined,
+    percentile: r.percentile_score ?? undefined,
+    csatScore: r.average_csat_score ?? undefined,
+    summary: r.summary || undefined,
+    executiveSummary: r.executive_summary || undefined,
+    rating: r.overall_rating ?? undefined,
+    aiGenerated: r.ai_generated ?? false,
+    weeklyScores,
   };
 }
 

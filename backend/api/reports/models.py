@@ -44,6 +44,9 @@ class PerformanceReport(models.Model):
     problem_solving_score = models.FloatField(null=True, blank=True, help_text="Average problem solving score")
     behavioral_trend = models.CharField(max_length=20, choices=TREND_CHOICES, null=True, blank=True)
     
+    # CSAT
+    average_csat_score = models.FloatField(null=True, blank=True, help_text="Average predicted CSAT score (1.0–5.0 raw)")
+
     # Topic Analysis
     most_common_topics = models.JSONField(default=dict, help_text="Dictionary of topic names and their counts")
     topic_resolution_rate = models.JSONField(default=dict, help_text="Dictionary of topic resolution rates")

@@ -145,6 +145,18 @@ class Command(BaseCommand):
                         )
                     )
                     generated += 1
+
+                    # Best-effort email — never let a send failure abort the loop.
+                    try:
+                        from notifications import send_report_notification
+                        sent = send_report_notification(report)
+                        if sent:
+                            self.stdout.write(f"  MAIL  {agent.username} — notification sent")
+                    except Exception as mail_exc:
+                        self.stdout.write(
+                            self.style.WARNING(f"  MAIL  {agent.username} — notification failed: {mail_exc}")
+                        )
+
                 except Exception as exc:
                     self.stdout.write(
                         self.style.ERROR(

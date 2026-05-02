@@ -82,6 +82,15 @@ def analyze_call_task(
         from .csat_tasks import predict_csat_for_call
         predict_csat_for_call.delay(call.id)
 
+        # Notify the agent — best-effort, never blocks or raises.
+        try:
+            from notifications import send_call_analyzed_notification
+            # Re-fetch so coaching_tips/behavioral_analysis are fresh from DB.
+            call.refresh_from_db()
+            send_call_analyzed_notification(call)
+        except Exception:
+            logger.exception("analyze_call_task: email notification failed for call_id=%s", call_id)
+
         logger.info(f"analyze_call_task completed successfully for call_id={call_id}")
 
     except SoftTimeLimitExceeded:

@@ -133,7 +133,7 @@ services:
     command:
       - "ollama serve & sleep 10 && ollama pull llama3.2; wait"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 5s
       retries: 15            # Up to 2.5 min for model pull on first boot

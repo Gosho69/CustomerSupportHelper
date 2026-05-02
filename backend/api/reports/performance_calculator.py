@@ -48,6 +48,7 @@ class PerformanceCalculator:
             'call_volume': self._calculate_call_volume(),
             'emotional_metrics': self._calculate_emotional_metrics(),
             'behavioral_metrics': self._calculate_behavioral_metrics(),
+            'csat_metrics': self._calculate_csat_metrics(),
             'topic_metrics': self._calculate_topic_metrics(),
             'consistency': self._calculate_consistency(),
             'comparison': self._calculate_team_comparison(),
@@ -109,24 +110,46 @@ class PerformanceCalculator:
     
     def _calculate_behavioral_metrics(self) -> Dict:
         overall_scores = []
-        
+        empathy_scores = []
+        resolution_flags = []
+
         for call in self.calls:
             if call.behavioral_analysis:
                 score = call.behavioral_analysis.get('behavioral_score', 0)
-                normalized_score = score / 100.0
-                overall_scores.append(normalized_score)
-        
+                overall_scores.append(score / 100.0)
+
+            if call.emotional_summary:
+                empathy = call.emotional_summary.get('agent_empathy_score')
+                if empathy is not None:
+                    empathy_scores.append(float(empathy))
+
+                resolution = call.emotional_summary.get('resolution_status')
+                resolution_flags.append(1.0 if resolution == 'resolved' else 0.0)
+
         trend = self._calculate_trend(overall_scores)
         avg_score = statistics.mean(overall_scores) if overall_scores else None
-        
+        avg_empathy = statistics.mean(empathy_scores) if empathy_scores else avg_score
+        problem_solving = statistics.mean(resolution_flags) if resolution_flags else avg_score
+        # Professionalism maps to the overall behavioural score
+        professionalism = avg_score
+
         return {
             'average_score': avg_score,
-            'empathy': avg_score,
-            'professionalism': avg_score,
-            'problem_solving': avg_score,
+            'empathy': avg_empathy,
+            'professionalism': professionalism,
+            'problem_solving': problem_solving,
             'trend': trend,
         }
     
+    def _calculate_csat_metrics(self) -> Dict:
+        csat_scores = [c.predicted_csat for c in self.calls if c.predicted_csat is not None]
+        if not csat_scores:
+            return {'average_csat': None, 'csat_normalized': None}
+        avg = statistics.mean(csat_scores)
+        # Normalize 1-5 scale → 0-100
+        normalized = round((avg - 1) / 4 * 100, 2)
+        return {'average_csat': round(avg, 2), 'csat_normalized': normalized}
+
     def _calculate_topic_metrics(self) -> Dict:
         topic_counts = {}
         
@@ -271,28 +294,43 @@ class PerformanceCalculator:
         if weekly_behavioral_scores:
             best_week_idx = weekly_behavioral_scores.index(max(weekly_behavioral_scores))
             worst_week_idx = weekly_behavioral_scores.index(min(weekly_behavioral_scores))
-            
+
             best_week_report = weekly_reports_list[best_week_idx]
             worst_week_report = weekly_reports_list[worst_week_idx]
-            
+
+            # Full week-by-week breakdown for trend charts
+            weekly_scores_chart = []
+            for i, week_report in enumerate(weekly_reports_list):
+                score_val = week_report.average_behavioral_score
+                weekly_scores_chart.append({
+                    'week': i + 1,
+                    'label': f"Wk {i + 1}",
+                    'start_date': str(week_report.start_date),
+                    'end_date': str(week_report.end_date),
+                    'score': round(score_val * 100, 1) if score_val is not None else None,
+                    'calls': week_report.total_calls,
+                    'consistency': week_report.performance_consistency_score,
+                })
+
             weekly_analysis = {
+                'weekly_scores': weekly_scores_chart,
                 'best_week': {
                     'start_date': str(best_week_report.start_date),
                     'end_date': str(best_week_report.end_date),
                     'behavioral_score': best_week_report.average_behavioral_score,
-                    'total_calls': best_week_report.total_calls
+                    'total_calls': best_week_report.total_calls,
                 },
-                'total_weeks_analyzed': len(weekly_reports_list)
+                'total_weeks_analyzed': len(weekly_reports_list),
             }
-            
+
             if len(weekly_behavioral_scores) > 1 and best_week_idx != worst_week_idx:
                 weekly_analysis['worst_week'] = {
                     'start_date': str(worst_week_report.start_date),
                     'end_date': str(worst_week_report.end_date),
                     'behavioral_score': worst_week_report.average_behavioral_score,
-                    'total_calls': worst_week_report.total_calls
+                    'total_calls': worst_week_report.total_calls,
                 }
-            
+
             metrics['weekly_analysis'] = weekly_analysis
         
         if len(weekly_consistency_scores) >= 2:
@@ -334,6 +372,7 @@ class PerformanceCalculator:
                 'problem_solving': None,
                 'trend': 'stable'
             },
+            'csat_metrics': {'average_csat': None, 'csat_normalized': None},
             'topic_metrics': {'most_common_topics': {}},
             'consistency': {'consistency_score': None, 'variance': None},
             'comparison': {'percentile': None},

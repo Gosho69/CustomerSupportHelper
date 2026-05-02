@@ -16,6 +16,7 @@ class PerformanceReportSerializer(serializers.ModelSerializer):
             'total_calls', 'average_call_duration',
             'average_emotional_score', 'positive_calls_percentage', 'negative_calls_percentage', 'emotional_trend',
             'average_behavioral_score', 'empathy_score', 'professionalism_score', 'problem_solving_score', 'behavioral_trend',
+            'average_csat_score',
             'most_common_topics', 'topic_resolution_rate',
             'performance_consistency_score', 'variance_from_average',
             'ranking_in_team', 'percentile_score',

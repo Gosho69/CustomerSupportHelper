@@ -240,6 +240,20 @@ MEDIA_ROOT = BASE_DIR / 'media'
 CALL_CENTER_INTEGRATION = os.getenv('CALL_CENTER_INTEGRATION', 'disabled')
 MOCK_CALLCENTER_API_KEY = os.getenv('MOCK_CALLCENTER_API_KEY', 'dev-secret-key')
 
+# ─────────────────────────────────────────────────────────────────
+# Resend — transactional email
+#   Local dev: leave RESEND_API_KEY unset (or set to 'test') → emails
+#              are printed to the console/log, never actually sent.
+#   Production: set RESEND_API_KEY to your real re_xxx key.
+# ─────────────────────────────────────────────────────────────────
+RESEND_API_KEY = os.getenv('RESEND_API_KEY', '')
+RESEND_FROM_EMAIL = os.getenv('RESEND_FROM_EMAIL', 'AgentSights <noreply@agentsights.com>')
+
+# The public URL of the frontend — used in email links.
+#   Local dev:  http://localhost:3000
+#   Production: your real domain
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
