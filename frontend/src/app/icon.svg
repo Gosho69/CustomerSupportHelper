@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="sg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#17CDFC"/>
+      <stop offset="100%" stop-color="#8B79F8"/>
+    </linearGradient>
+    <radialGradient id="ig" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#62BEFF"/>
+      <stop offset="60%" stop-color="#3A98F0"/>
+      <stop offset="100%" stop-color="#1E6CD8"/>
+    </radialGradient>
+    <filter id="og" x="-60%" y="-120%" width="220%" height="340%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5"/>
+    </filter>
+    <filter id="sw" x="-25%" y="-70%" width="150%" height="240%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Outer glow halo -->
+  <ellipse cx="50" cy="50" rx="43" ry="26" fill="none" stroke="url(#sg)" stroke-width="8" opacity="0.4" filter="url(#og)"/>
+  <!-- Sclera (white of the eye) -->
+  <ellipse cx="50" cy="50" rx="43" ry="26" fill="white"/>
+  <!-- Eye outline with glow -->
+  <ellipse cx="50" cy="50" rx="43" ry="26" fill="none" stroke="url(#sg)" stroke-width="3.5" filter="url(#sw)"/>
+  <!-- Iris -->
+  <circle cx="50" cy="50" r="18" fill="url(#ig)"/>
+  <!-- Pupil highlight (brighter center) -->
+  <circle cx="50" cy="50" r="9" fill="white" fill-opacity="0.82"/>
+  <!-- Glint dot -->
+  <circle cx="57" cy="44" r="4" fill="white"/>
+</svg>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mic, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { authApi } from "@/lib/api";
 
@@ -62,12 +62,11 @@ export default function LoginPage() {
         {/* Logo and Brand */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center space-x-3 group">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-200"
-              style={{ background: "var(--accent)" }}
-            >
-              <Mic className="w-8 h-8 text-white" />
-            </div>
+            <img
+              src="/logo-icon.svg"
+              alt="AgentSights"
+              className="w-14 h-14 group-hover:scale-105 transition-transform duration-200"
+            />
           </Link>
           <h1
             className="text-2xl font-bold mt-5"

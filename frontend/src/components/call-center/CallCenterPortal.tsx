@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { callsApi, mockCallCenterApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 import type {
   BulkUploadCallResult,
   BulkUploadResponse,
@@ -67,12 +68,15 @@ function formatBytes(bytes: number): string {
 }
 
 export default function CallCenterPortal() {
+  const { user } = useAuthStore();
+  const currentEmail = user?.email ?? "";
+
   const [calls, setCalls] = useState<ExternalCall[]>([]);
   const [loadingCalls, setLoadingCalls] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Upload form state
-  const [agentEmail, setAgentEmail] = useState("");
+  // Upload form state — pre-filled with the logged-in user's email
+  const [agentEmail, setAgentEmail] = useState(currentEmail);
   const [files, setFiles] = useState<File[]>([]);
   const [fileResults, setFileResults] = useState<
     Map<string, BulkUploadCallResult>
@@ -90,7 +94,7 @@ export default function CallCenterPortal() {
     if (!silent) setLoadingCalls(true);
     else setRefreshing(true);
     try {
-      const res = await mockCallCenterApi.getCalls();
+      const res = await mockCallCenterApi.getCalls(undefined, currentEmail);
       setCalls(res.data || []);
     } catch {
       // keep stale data on error
@@ -98,7 +102,7 @@ export default function CallCenterPortal() {
       setLoadingCalls(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [currentEmail]);
 
   const fetchQueueStatus = useCallback(async () => {
     try {
@@ -202,7 +206,7 @@ export default function CallCenterPortal() {
           `${data.imported} call${data.imported > 1 ? "s" : ""} queued for analysis. Processing will begin within seconds.`,
         );
         setFiles([]);
-        setAgentEmail("");
+        setAgentEmail(currentEmail);
       } else if (data.imported > 0) {
         setUploadSuccess(
           `${data.imported} of ${data.total} calls queued. ${data.failed} failed — see details below.`,
@@ -233,86 +237,80 @@ export default function CallCenterPortal() {
   const imported = calls.filter((c) => c.analyzed).length;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--background)" }}>
+    <div className="space-y-6">
       {/* Page header */}
-      <div
-        className="border-b px-8 py-5"
-        style={{ background: "#ffffff", borderColor: "var(--border)" }}
-      >
-        <div className="flex items-center justify-between max-w-5xl">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: "#0e7490" }}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: "#0e7490" }}
+          >
+            <PhoneCall className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1
+              className="text-[18px] font-bold"
+              style={{ color: "var(--text-primary)" }}
             >
-              <PhoneCall className="w-5 h-5 text-white" />
+              Call Center Simulator
+            </h1>
+            <p
+              className="text-[13px]"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              External platform simulation — upload recordings here and
+              AgentSights will auto-import and analyze them
+            </p>
+          </div>
+        </div>
+        {/* Stats strip */}
+        <div className="flex items-center gap-6 flex-shrink-0">
+          <div className="text-center">
+            <div
+              className="text-[22px] font-bold"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {calls.length}
             </div>
-            <div>
-              <h1
-                className="text-[18px] font-bold"
-                style={{ color: "var(--text-primary)" }}
-              >
-                Call Center Simulator
-              </h1>
-              <p
-                className="text-[13px]"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                External platform simulation — upload recordings here and
-                AgentSights will auto-import and analyze them
-              </p>
+            <div
+              className="text-[11px]"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Total
             </div>
           </div>
-          {/* Stats strip */}
-          <div className="flex items-center gap-6">
-            <div className="text-center">
-              <div
-                className="text-[22px] font-bold"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {calls.length}
-              </div>
-              <div
-                className="text-[11px]"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Total
-              </div>
+          <div className="text-center">
+            <div
+              className="text-[22px] font-bold"
+              style={{ color: "#e68a00" }}
+            >
+              {pending}
             </div>
-            <div className="text-center">
-              <div
-                className="text-[22px] font-bold"
-                style={{ color: "#e68a00" }}
-              >
-                {pending}
-              </div>
-              <div
-                className="text-[11px]"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Pending
-              </div>
+            <div
+              className="text-[11px]"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Pending
             </div>
-            <div className="text-center">
-              <div
-                className="text-[22px] font-bold"
-                style={{ color: "#0caf60" }}
-              >
-                {imported}
-              </div>
-              <div
-                className="text-[11px]"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Imported
-              </div>
+          </div>
+          <div className="text-center">
+            <div
+              className="text-[22px] font-bold"
+              style={{ color: "#0caf60" }}
+            >
+              {imported}
+            </div>
+            <div
+              className="text-[11px]"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Imported
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-8 py-6 max-w-5xl space-y-6">
-        {/* ── Upload card ── */}
+      {/* ── Upload card ── */}
         <div
           className="rounded-xl border overflow-hidden"
           style={{ background: "#ffffff", borderColor: "var(--border)" }}
@@ -331,14 +329,19 @@ export default function CallCenterPortal() {
           </div>
 
           <form onSubmit={handleUpload} className="p-6 space-y-4">
-            {/* Agent email */}
+            {/* Agent email — auto-filled from logged-in account */}
             <div>
-              <label
-                className="block text-[13px] font-medium mb-1.5"
-                style={{ color: "var(--text-primary)" }}
-              >
-                Agent Email
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  className="block text-[13px] font-medium"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  Agent Email
+                </label>
+                <span className="text-[11px]" style={{ color: "var(--text-tertiary)" }}>
+                  auto-filled from your account
+                </span>
+              </div>
               <input
                 type="email"
                 required
@@ -866,7 +869,8 @@ export default function CallCenterPortal() {
             in the backend environment.
           </div>
         </div>
-      </div>
     </div>
   );
 }
+
+

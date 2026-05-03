@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mic, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const NAV_ITEMS = ["Features", "How It Works", "Benefits"];
@@ -21,17 +21,19 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200"
-              style={{ background: "var(--accent)" }}
-            >
-              <Mic className="w-5 h-5 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              AgentSights
+            <img
+              src="/logo-icon.svg"
+              alt="AgentSights"
+              className="w-9 h-9 group-hover:scale-110 transition-transform duration-200"
+            />
+            <span className="text-xl font-bold">
+              <span style={{ color: "var(--text-primary)" }}>Agent</span>
+              <span style={{
+                background: "linear-gradient(90deg, #4BA8FF, #8B7CF8)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>Sights</span>
             </span>
           </Link>
 

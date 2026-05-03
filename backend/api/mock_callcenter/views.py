@@ -185,6 +185,9 @@ class ExternalCallListView(generics.ListAPIView):
         if analyzed_param is not None:
             # 'false' → not analyzed; anything else → analyzed
             qs = qs.filter(analyzed=(analyzed_param.lower() != 'false'))
+        agent_email = self.request.query_params.get('agent_email', '').strip()
+        if agent_email:
+            qs = qs.filter(agent_email__iexact=agent_email)
         return qs
 
 

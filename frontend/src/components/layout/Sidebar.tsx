@@ -12,7 +12,6 @@ import {
   Upload,
   ChevronLeft,
   ChevronRight,
-  Mic,
   PhoneCall,
 } from "lucide-react";
 import { useState } from "react";
@@ -65,18 +64,20 @@ export default function Sidebar({ userRole }: SidebarProps) {
         style={{ borderColor: "var(--border)" }}
       >
         <Link href="/dashboard" className="flex items-center space-x-2.5">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: "var(--accent)" }}
-          >
-            <Mic className="w-4.5 h-4.5 text-white" />
-          </div>
+          <img
+            src="/logo-icon.svg"
+            alt="AgentSights"
+            className="w-8 h-8 flex-shrink-0"
+          />
           {!collapsed && (
-            <span
-              className="text-[15px] font-semibold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              AgentSights
+            <span className="text-[15px] font-semibold">
+              <span style={{ color: "var(--text-primary)" }}>Agent</span>
+              <span style={{
+                background: "linear-gradient(90deg, #4BA8FF, #8B7CF8)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>Sights</span>
             </span>
           )}
         </Link>

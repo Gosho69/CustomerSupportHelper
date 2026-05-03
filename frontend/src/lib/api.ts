@@ -229,11 +229,13 @@ export const mockCallCenterApi = {
   bulkUploadCalls: (formData: FormData) =>
     mockApi.post("/calls/bulk-upload/", formData),
 
-  // Get all calls (optionally filter by analyzed status)
-  getCalls: (analyzed?: boolean) =>
-    mockApi.get("/calls/", {
-      params: analyzed !== undefined ? { analyzed: String(analyzed) } : {},
-    }),
+  // Get calls — optionally filter by analyzed status and/or agent email
+  getCalls: (analyzed?: boolean, agentEmail?: string) => {
+    const params: Record<string, string> = {};
+    if (analyzed !== undefined) params.analyzed = String(analyzed);
+    if (agentEmail) params.agent_email = agentEmail;
+    return mockApi.get("/calls/", { params });
+  },
 
   // Get unanalyzed calls only
   getUnanalyzedCalls: () =>

@@ -68,6 +68,12 @@ class GenerateReportView(APIView):
             else:
                 start_date, end_date = get_month_date_range()
         
+        if start_date < agent.created_at.date():
+            return Response(
+                {'error': 'Cannot generate a report for a period before the agent was created'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         existing_report = PerformanceReport.objects.filter(
             agent=agent,
             report_type=report_type,
@@ -116,27 +122,53 @@ class AgentReportsListView(APIView):
     
     def get(self, request, agent_id=None):
         if request.user.role == 'agent':
-            reports = PerformanceReport.objects.filter(agent=request.user)
-        
+            reports = PerformanceReport.objects.filter(
+                agent=request.user,
+                start_date__gte=request.user.created_at.date(),
+            )
+
         elif request.user.role == 'head_of_department':
             if agent_id:
                 try:
                     agent = MyUser.objects.get(id=agent_id, reporting_to=request.user)
-                    reports = PerformanceReport.objects.filter(agent=agent)
+                    reports = PerformanceReport.objects.filter(
+                        agent=agent,
+                        start_date__gte=agent.created_at.date(),
+                    )
                 except MyUser.DoesNotExist:
                     return Response(
                         {'error': 'Agent not found or not your subordinate'},
                         status=status.HTTP_404_NOT_FOUND
                     )
             else:
+                from django.db.models import F
+                from django.db.models.functions import TruncDate
                 subordinates = MyUser.objects.filter(reporting_to=request.user, role='agent')
-                reports = PerformanceReport.objects.filter(agent__in=subordinates)
-        
+                reports = PerformanceReport.objects.filter(
+                    agent__in=subordinates,
+                ).annotate(
+                    agent_created=TruncDate('agent__created_at'),
+                ).filter(start_date__gte=F('agent_created'))
+
         elif request.user.role == 'admin':
             if agent_id:
-                reports = PerformanceReport.objects.filter(agent_id=agent_id)
+                try:
+                    agent = MyUser.objects.get(id=agent_id)
+                    reports = PerformanceReport.objects.filter(
+                        agent=agent,
+                        start_date__gte=agent.created_at.date(),
+                    )
+                except MyUser.DoesNotExist:
+                    return Response(
+                        {'error': 'Agent not found'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
             else:
-                reports = PerformanceReport.objects.all()
+                from django.db.models import F
+                from django.db.models.functions import TruncDate
+                reports = PerformanceReport.objects.annotate(
+                    agent_created=TruncDate('agent__created_at'),
+                ).filter(start_date__gte=F('agent_created'))
         
         else:
             return Response(
@@ -184,12 +216,25 @@ class MyReportsView(APIView):
     
     def get(self, request):
         if request.user.role == 'agent':
-            reports = PerformanceReport.objects.filter(agent=request.user)
+            reports = PerformanceReport.objects.filter(
+                agent=request.user,
+                start_date__gte=request.user.created_at.date(),
+            )
         elif request.user.role == 'head_of_department':
+            from django.db.models import F
+            from django.db.models.functions import TruncDate
             subordinates = MyUser.objects.filter(reporting_to=request.user, role='agent')
-            reports = PerformanceReport.objects.filter(agent__in=subordinates)
+            reports = PerformanceReport.objects.filter(
+                agent__in=subordinates,
+            ).annotate(
+                agent_created=TruncDate('agent__created_at'),
+            ).filter(start_date__gte=F('agent_created'))
         elif request.user.role == 'admin':
-            reports = PerformanceReport.objects.all()
+            from django.db.models import F
+            from django.db.models.functions import TruncDate
+            reports = PerformanceReport.objects.annotate(
+                agent_created=TruncDate('agent__created_at'),
+            ).filter(start_date__gte=F('agent_created'))
         else:
             return Response(
                 {'error': 'Unauthorized'},
