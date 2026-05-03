@@ -196,10 +196,9 @@ export const companiesApi = {
 };
 
 // Mock Call Center API — separate axios instance authenticated with X-API-Key.
-// This simulates an external call center platform. The API key is set via
-// NEXT_PUBLIC_MOCK_API_KEY (defaults to 'dev-secret-key' for local development).
-const MOCK_API_KEY =
-  process.env.NEXT_PUBLIC_MOCK_API_KEY || "dev-secret-key";
+// This simulates an external call center platform. The API key must be set via
+// NEXT_PUBLIC_MOCK_API_KEY in Vercel (production) or frontend/.env.local (dev).
+const MOCK_API_KEY = process.env.NEXT_PUBLIC_MOCK_API_KEY || "";
 
 const MOCK_BASE_URL =
   (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api") +
