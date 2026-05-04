@@ -85,6 +85,8 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
+      ollama:
+        condition: service_healthy
 
   # ─────────────────────────────────────────────
   # Scheduler — runs auto_generate_reports daily at 23:55

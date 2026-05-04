@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 from collections import Counter
 from datetime import datetime
 from typing import List, Dict, Optional, Any
 import requests
+
+logger = logging.getLogger(__name__)
 
 OLLAMA_API_URL = os.environ.get("OLLAMA_API_URL", "http://localhost:11434/api/generate")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
@@ -34,9 +37,13 @@ def _turn_word_counts(turns: List[Dict]) -> Dict[str, int]:
 def _check_ollama_available() -> bool:
     try:
         ollama_base = OLLAMA_API_URL.replace("/api/generate", "")
-        response = requests.get(f"{ollama_base}/api/tags", timeout=2)
-        return response.status_code == 200
-    except:
+        response = requests.get(f"{ollama_base}/api/tags", timeout=5)
+        available = response.status_code == 200
+        if not available:
+            logger.warning("Ollama /api/tags returned status %s — falling back to heuristic coaching", response.status_code)
+        return available
+    except Exception as e:
+        logger.warning("Ollama not reachable at %s — falling back to heuristic coaching. Error: %s", OLLAMA_API_URL, e)
         return False
 
 
@@ -82,39 +89,46 @@ Return tips array if significant issues found:
 
 Return ONLY JSON array, no other text."""
 
-    try:
-        payload = {
-            "model": OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.7,
-                "num_predict": 1500
-            }
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": 0.7,
+            "num_predict": 1500
         }
-        
-        response = requests.post(OLLAMA_API_URL, json=payload, timeout=60)
-        
-        if response.status_code != 200:
+    }
+
+    for attempt in range(2):
+        try:
+            response = requests.post(OLLAMA_API_URL, json=payload, timeout=60)
+
+            if response.status_code != 200:
+                logger.warning("Ollama generate returned HTTP %s (attempt %d)", response.status_code, attempt + 1)
+                return None
+
+            response_data = response.json()
+            response_text = response_data.get("response", "").strip()
+
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
+            tips = json.loads(response_text)
+
+            if isinstance(tips, list) and len(tips) > 0:
+                logger.info("Ollama generated %d coaching tip(s) on attempt %d", len(tips), attempt + 1)
+                return tips
+            else:
+                logger.info("Ollama returned empty tips array — no significant issues found")
+                return None
+
+        except Exception as e:
+            logger.warning("Ollama generate attempt %d failed: %s", attempt + 1, e)
+            if attempt == 0:
+                continue
             return None
-        
-        response_data = response.json()
-        response_text = response_data.get("response", "").strip()
-        
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        tips = json.loads(response_text)
-        
-        if isinstance(tips, list) and len(tips) > 0:
-            return tips
-        else:
-            return None
-            
-    except Exception:
-        return None
 
 
 def generate_coaching_tips(transcript=None, turns=None, summary=None, call_summary=None, emotion_analysis=None, emotion_summary=None, ratings=None):
@@ -147,7 +161,7 @@ def generate_coaching_tips(transcript=None, turns=None, summary=None, call_summa
 
     ollama_available = _check_ollama_available()
     ai_tips = None
-    
+
     if ollama_available:
         ai_tips = _generate_tips_with_ai(
             turns=turns,
@@ -156,9 +170,13 @@ def generate_coaching_tips(transcript=None, turns=None, summary=None, call_summa
             ratings=ratings,
             summary_text=summary
         )
-        
+
         if ai_tips:
             tips = ai_tips
+        else:
+            logger.info("Ollama returned no tips — falling back to heuristic coaching")
+    else:
+        logger.warning("Ollama unavailable (URL: %s) — using heuristic coaching", OLLAMA_API_URL)
 
     if not tips:
         agent_turns = [t for t in turns if t.get('speaker','').lower().startswith('agent')] if turns else []

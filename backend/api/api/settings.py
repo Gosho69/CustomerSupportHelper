@@ -259,6 +259,10 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {'console': {'class': 'logging.StreamHandler'}},
     'root': {'handlers': ['console'], 'level': os.getenv('DJANGO_LOG_LEVEL', 'WARNING')},
+    'loggers': {
+        # Always show coaching tips activity (ai_powered vs heuristic) at INFO level
+        'coaching_tips.coaching_tips': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+    },
 }
 
 # Celery Configuration
