@@ -42,14 +42,15 @@ class Command(BaseCommand):
             .select_related("agent")
         )
 
-        count = stale.count()
+        stale_ids = list(stale.values_list("id", flat=True))
+        count = len(stale_ids)
 
         if count == 0:
             self.stdout.write(self.style.SUCCESS("No predated reports found. Nothing to do."))
             return
 
         self.stdout.write(f"Found {count} predated report(s):\n")
-        for r in stale.order_by("agent__username", "start_date"):
+        for r in PerformanceReport.objects.filter(id__in=stale_ids).select_related("agent").order_by("agent__username", "start_date"):
             self.stdout.write(
                 f"  [{r.id}] {r.agent.username} — {r.report_type} "
                 f"{r.start_date} – {r.end_date}  "
@@ -57,7 +58,7 @@ class Command(BaseCommand):
             )
 
         if options["commit"]:
-            stale.delete()
+            PerformanceReport.objects.filter(id__in=stale_ids).delete()
             self.stdout.write(
                 self.style.SUCCESS(f"\nDeleted {count} predated report(s).")
             )
