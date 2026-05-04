@@ -31,6 +31,16 @@ class Command(BaseCommand):
         
         for agent in agents:
             try:
+                # Never generate a report for a period that ended before the
+                # agent was created — there cannot be any meaningful data there.
+                if end_date < agent.created_at.date():
+                    self.stdout.write(self.style.WARNING(
+                        f'Skipping {agent.username} — period {start_date}–{end_date} '
+                        f'predates account creation ({agent.created_at.date()})'
+                    ))
+                    skipped_count += 1
+                    continue
+
                 existing = PerformanceReport.objects.filter(
                     agent=agent,
                     report_type='monthly',
