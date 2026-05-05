@@ -39,6 +39,11 @@ def analyze_call_task(
     from AI_modules.orchestrator.orchestrator import analyze_call
 
     try:
+        logger.info(
+            "analyze_call_task START: call_id=%d, model=%s, whisper=%s",
+            call_id, summarization_model, whisper_model_size
+        )
+
         call = Call.objects.get(id=call_id)
         call.status = 'processing'
         call.save(update_fields=['status'])
@@ -53,13 +58,57 @@ def analyze_call_task(
             gpt4_max_tokens=gpt4_max_tokens,
         )
 
+        # ── Pipeline diagnostics ──────────────────────────────────────────
+        transcript = analysis_results.get('transcript', {})
+        utterances = transcript.get('utterances', [])
+        agent_turns    = [u for u in utterances if u.get('role', '').startswith('Agent')]
+        customer_turns = [u for u in utterances if u.get('role', '').startswith('Customer')]
+        agent_words    = sum(len(u.get('text', '').split()) for u in agent_turns)
+        customer_words = sum(len(u.get('text', '').split()) for u in customer_turns)
+        logger.info(
+            "Transcript: diarization_method=%s, utterances=%d",
+            transcript.get('diarization_method', 'unknown'), len(utterances)
+        )
+        logger.info(
+            "Speaker split: agent_turns=%d (%d words), customer_turns=%d (%d words)",
+            len(agent_turns), agent_words, len(customer_turns), customer_words
+        )
+
+        call_summary = analysis_results.get('call_summary', {})
+        ratings = call_summary.get('detailed_ratings', {})
+        ea = call_summary.get('emotional_assessment', {})
+        logger.info(
+            "call_summary: ratings=%s, resolution=%s, satisfaction=%s, "
+            "agent_tone=%s, customer_tone=%s",
+            ratings,
+            ea.get('resolution_status') or call_summary.get('resolution_status'),
+            ea.get('customer_satisfaction') or call_summary.get('customer_satisfaction'),
+            call_summary.get('agent_tone'),
+            call_summary.get('customer_tone'),
+        )
+
+        behavioral_score = analysis_results.get('behavioral_analysis', {}).get('behavioral_score')
+        behavioral_assessment = analysis_results.get('behavioral_summary', {}).get('overall_assessment')
+        logger.info(
+            "Behavioral score: %.1f, assessment=%s",
+            behavioral_score or 0, behavioral_assessment or 'unknown'
+        )
+
+        coaching = analysis_results.get('coaching_tips', {})
+        logger.info(
+            "Coaching tips: method=%s, quality=%s, tips=%d",
+            coaching.get('generation_method', 'unknown'),
+            coaching.get('quality_status', 'unknown'),
+            len(coaching.get('tips', [])),
+        )
+        # ─────────────────────────────────────────────────────────────────
+
         # Extract duration from transcript
         duration = 0
-        transcript = analysis_results.get('transcript', {})
         if 'duration_sec' in transcript:
             duration = int(transcript['duration_sec'])
-        elif 'utterances' in transcript and transcript['utterances']:
-            last_utterance = max(transcript['utterances'], key=lambda u: u.get('end', 0))
+        elif utterances:
+            last_utterance = max(utterances, key=lambda u: u.get('end', 0))
             duration = int(last_utterance.get('end', 0))
         elif 'segments' in transcript and transcript['segments']:
             duration = int(transcript['segments'][-1].get('end', 0))
@@ -91,7 +140,7 @@ def analyze_call_task(
         except Exception:
             logger.exception("analyze_call_task: email notification failed for call_id=%s", call_id)
 
-        logger.info(f"analyze_call_task completed successfully for call_id={call_id}")
+        logger.info("analyze_call_task COMPLETE: call_id=%d", call_id)
 
     except SoftTimeLimitExceeded:
         logger.error(f"analyze_call_task soft time limit exceeded for call_id={call_id}")

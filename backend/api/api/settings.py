@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'calls',
     'reports',
     'mock_callcenter',
+    'phrase_config',
 ]
 
 MIDDLEWARE = [
@@ -262,6 +263,18 @@ LOGGING = {
     'loggers': {
         # Always show coaching tips activity (ai_powered vs heuristic) at INFO level
         'coaching_tips.coaching_tips': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        # Always show emotion model load failures and per-turn fallback warnings
+        'Emotion_analyzation.emotion_analyzer': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+        # Show GPT-4 request/response fields (ratings, resolution, satisfaction)
+        'summarization.gpt4_summary': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        # Show local FLAN-T5 model load, raw output, parsed ratings, corrections
+        'summarization.local_summary': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        # Show orchestrator penalty application and score changes
+        # tasks.py imports as `from AI_modules.orchestrator.orchestrator` so __name__
+        # is AI_modules.orchestrator.orchestrator, not orchestrator.orchestrator
+        'AI_modules.orchestrator.orchestrator': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        # Show per-call pipeline summary in task logs
+        'calls.tasks': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
     },
 }
 

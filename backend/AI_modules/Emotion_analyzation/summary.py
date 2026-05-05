@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 from collections import Counter
 
 from data_models.data_models import Turn
+import phrase_loader as _pl
 
 
 class CallSummaryAnalyzer:
@@ -78,23 +79,36 @@ class CallSummaryAnalyzer:
                 "trajectory": "flat",
                 "description": "Single or no turns in call"
             }
-        
+
         customer_turns = [t for t in turns if t.speaker == "Customer"]
-        
+
         if not customer_turns:
             customer_turns = turns
-        
+
         start_emotion = customer_turns[0].emotion if customer_turns else turns[0].emotion
-        end_emotion = customer_turns[-1].emotion if customer_turns else turns[-1].emotion
-        
         start_sentiment = customer_turns[0].sentiment if customer_turns else turns[0].sentiment
+
+        # Determine end_emotion using the last 3 customer turns, not just the
+        # very last one.  A polite "thanks" or "okay" at the end of a deeply
+        # frustrating call is classified as "happy" by the emotion model — taking
+        # only that final utterance makes the whole call look resolved when it
+        # wasn't.  If the majority of the end window is negative, use the most
+        # common negative emotion as the true end state.
+        _negative_emotions = {"angry", "frustrated", "sad"}
+        end_window = customer_turns[-3:] if len(customer_turns) >= 3 else customer_turns
+        window_emotions = [t.emotion for t in end_window]
+        negative_in_window = [e for e in window_emotions if e in _negative_emotions]
+        if negative_in_window:
+            end_emotion = Counter(negative_in_window).most_common(1)[0][0]
+        else:
+            end_emotion = customer_turns[-1].emotion
+
         end_sentiment = customer_turns[-1].sentiment if customer_turns else turns[-1].sentiment
-        
+
         trajectory_type = self._categorize_trajectory(start_emotion, end_emotion)
-        
-        emotions = [t.emotion for t in customer_turns]
+
         sentiment_changes = self._count_sentiment_changes(customer_turns)
-        
+
         return {
             "start_emotion": start_emotion,
             "end_emotion": end_emotion,
@@ -225,29 +239,45 @@ class CallSummaryAnalyzer:
         if not customer_turns:
             return "unknown"
 
-        last_customer_turn = customer_turns[-1]
+        # Use the last 3 customer turns to assess the ending state rather than
+        # just the final utterance.  A polite "thanks/okay" after a frustrating
+        # call would otherwise make the call look resolved.
+        end_window = customer_turns[-3:] if len(customer_turns) >= 3 else customer_turns
+        _neg = {"angry", "frustrated"}
+        neg_count = sum(1 for t in end_window if t.emotion in _neg)
+        # Majority of the end window is negative → call ended badly
+        ended_negative = neg_count > len(end_window) / 2
 
-        # Look at last 3 customer turns for gratitude, not just the very last
+        # Positive ending requires NO negative majority in the window AND the
+        # final utterance itself to be non-negative.
+        last_customer_turn = customer_turns[-1]
+        positive_ending = (
+            not ended_negative and
+            last_customer_turn.emotion in ["happy", "neutral", "surprised"]
+        )
+
+        # Look at last 3 customer turns for gratitude
         recent_customer = customer_turns[-3:] if len(customer_turns) >= 3 else customer_turns
         has_thanks = any("thank" in t.text.lower() for t in recent_customer)
 
         # Check if agent used conclusive closing language
-        conclusive_phrases = [
+        _CONCLUSIVE_DEFAULT = [
             "anything else", "have a great", "have a good", "goodbye",
             "take care", "you're all set", "all set", "you're welcome",
             "you are welcome", "glad i could", "happy to help",
-            "is there anything", "good day"
+            "is there anything", "good day",
         ]
+        conclusive_phrases = _pl.get("conclusive_phrases", _CONCLUSIVE_DEFAULT)
         agent_closed_call = False
         if agent_turns:
             last_agent_text = agent_turns[-1].text.lower()
             agent_closed_call = any(p in last_agent_text for p in conclusive_phrases)
 
-        positive_ending = last_customer_turn.emotion in ["happy", "neutral", "surprised"]
-        ended_negative = last_customer_turn.emotion in ["angry", "frustrated"]
-
         if ended_negative and not has_thanks:
             return "unresolved"
+        elif ended_negative:
+            # Negative majority but customer said "thanks" — ambiguous; lean pending
+            return "pending"
         elif (positive_ending and has_thanks) or (positive_ending and agent_closed_call):
             return "resolved"
         elif positive_ending:
@@ -261,10 +291,15 @@ class CallSummaryAnalyzer:
         if not customer_turns:
             return "unknown"
 
-        last_emotion = customer_turns[-1].emotion
+        # Use the trajectory's end_emotion (which uses the last-3-turns window)
+        # rather than the raw last utterance, so a polite "thanks" at the end of
+        # a frustrated call doesn't inflate the satisfaction score.
+        last_emotion = trajectory.get("end_emotion", customer_turns[-1].emotion)
+
         agent_apologies = len([m for m in key_moments if m["type"] == "apology" and m["speaker"] == "Agent"])
         agent_empathy_count = len([m for m in key_moments if m["type"] == "empathy" and m["speaker"] == "Agent"])
         avg_sentiment = self._get_average_sentiment(customer_turns)
+        traj_type = trajectory.get("trajectory", "")
 
         # Check if customer expressed gratitude in any of the last 3 turns
         recent_turns = customer_turns[-3:] if len(customer_turns) >= 3 else customer_turns
@@ -272,9 +307,14 @@ class CallSummaryAnalyzer:
 
         score = 0
 
-        # happy ending is clearly satisfied; neutral is ambiguous, not as good
+        # Happy ending score is context-dependent: a positive trajectory earns
+        # the full +3, but a happy end after an overwhelmingly negative call
+        # (polite "thanks/okay" closing) only earns +1 to avoid false satisfaction.
         if last_emotion == "happy":
-            score += 3
+            if traj_type in ("negative_throughout", "escalated"):
+                score += 1   # polite close after bad call — not genuine satisfaction
+            else:
+                score += 3
         elif last_emotion == "neutral":
             score += 1
         elif last_emotion in ["sad", "confused", "fearful", "surprised"]:
@@ -282,7 +322,7 @@ class CallSummaryAnalyzer:
         else:  # angry, frustrated
             score -= 2
 
-        # Gratitude is a strong positive signal — weight it more than apologies
+        # Gratitude is a positive signal — weight it more than apologies
         if has_thanks:
             score += 2
 
@@ -294,12 +334,14 @@ class CallSummaryAnalyzer:
         elif avg_sentiment == "negative":
             score -= 1
 
-        if trajectory["trajectory"] == "resolved":
+        if traj_type == "resolved":
             score += 2
-        elif trajectory["trajectory"] == "escalated":
+        elif traj_type == "escalated":
             score -= 2
-        elif trajectory["trajectory"] == "positive_throughout":
+        elif traj_type == "positive_throughout":
             score += 1
+        elif traj_type == "negative_throughout":
+            score -= 2   # call was consistently bad — reflect that in satisfaction
 
         if score >= 6:
             return "very_satisfied"

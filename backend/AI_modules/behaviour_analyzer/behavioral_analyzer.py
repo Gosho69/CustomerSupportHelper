@@ -1,5 +1,6 @@
 import json
 from typing import List, Dict, Tuple
+import phrase_loader as _pl
 
 
 class BehavioralAnalyzer:
@@ -226,12 +227,19 @@ class BehavioralAnalyzer:
         else:
             return "too_slow"
     
+    _QUESTION_WORDS_DEFAULT = [
+        'what', 'when', 'where', 'why', 'how', 'who', 'which',
+        'can', 'could', 'would', 'should', 'do', 'does', 'did', 'is', 'are',
+    ]
+
     def _analyze_questions(self, agent_turns: List[Dict], customer_turns: List[Dict]) -> Dict:
+        question_words = _pl.get("question_words", self._QUESTION_WORDS_DEFAULT)
+
         def count_questions(turns: List[Dict]) -> int:
             count = 0
             for turn in turns:
                 text = turn.get('text', '').lower()
-                if '?' in text or any(text.startswith(q) for q in ['what', 'when', 'where', 'why', 'how', 'who', 'which', 'can', 'could', 'would', 'should', 'do', 'does', 'did', 'is', 'are']):
+                if '?' in text or any(text.startswith(q) for q in question_words):
                     count += 1
             return count
         
@@ -247,18 +255,20 @@ class BehavioralAnalyzer:
             "question_pattern": "good" if 0.2 <= questions_per_agent_turn <= 0.6 else "needs_improvement"
         }
     
+    _LISTENING_PHRASES_DEFAULT = [
+        "i understand", "i see", "i hear you", "that makes sense",
+        "i appreciate", "thank you for", "let me make sure",
+        "if i understand correctly", "so what you're saying",
+        "got it", "okay", "alright", "right", "absolutely",
+        "definitely", "certainly", "of course", "sure",
+    ]
+
     def _analyze_active_listening(self, agent_turns: List[Dict]) -> Dict:
-        listening_phrases = [
-            "i understand", "i see", "i hear you", "that makes sense",
-            "i appreciate", "thank you for", "let me make sure", 
-            "if i understand correctly", "so what you're saying",
-            "got it", "okay", "alright", "right", "absolutely",
-            "definitely", "certainly", "of course", "sure"
-        ]
-        
+        listening_phrases = _pl.get("listening_phrases", self._LISTENING_PHRASES_DEFAULT)
+
         acknowledgment_count = 0
         acknowledgment_turns = []
-        
+
         for turn in agent_turns:
             text = turn.get('text', '').lower()
             if any(phrase in text for phrase in listening_phrases):
@@ -279,7 +289,7 @@ class BehavioralAnalyzer:
     
     def _calculate_behavioral_score(self, metrics: Dict) -> float:
         score = 100.0
-        
+
         agent_pacing = metrics.get('agent_pacing', 'unknown')
         if agent_pacing == 'too_fast':
             score -= 15
@@ -287,38 +297,50 @@ class BehavioralAnalyzer:
             score -= 10
         elif agent_pacing == 'slightly_fast':
             score -= 5
-        
+
         agent_interrupts = metrics.get('agent_interruptions', 0)
         score -= min(agent_interrupts * 5, 20)
-        
+
         response_assessment = metrics.get('agent_response_assessment', 'unknown')
         if response_assessment == 'too_slow':
             score -= 15
         elif response_assessment == 'too_quick':
             score -= 10
-        
+
         question_pattern = metrics.get('question_pattern', 'needs_improvement')
         if question_pattern == 'needs_improvement':
             score -= 10
-        
+
         listening = metrics.get('listening_assessment', 'needs_improvement')
         if listening == 'needs_improvement':
             score -= 20
         elif listening == 'good':
             score -= 10
-        
+
         silence_pct = metrics.get('silence_percentage', 0)
         if silence_pct > 30:
             score -= 10
         elif silence_pct > 20:
             score -= 5
-        
+
         talk_ratio = metrics.get('talk_ratio', 1.0)
         if talk_ratio > 3.0:
             score -= 10
         elif talk_ratio > 2.0:
             score -= 5
-        
+
+        # Word-ratio guard: in a support call the agent should speak at least
+        # 40% of all words.  If the "agent" spoke far less than the "customer",
+        # the speaker labels are likely swapped (the calm customer was mislabelled
+        # as agent).  Apply a 15-point deduction to signal the anomaly.
+        agent_words    = metrics.get('agent_total_words', 0)
+        customer_words = metrics.get('customer_total_words', 0)
+        total_words    = agent_words + customer_words
+        if total_words > 50:  # only meaningful when there's enough speech
+            agent_share = agent_words / total_words
+            if agent_share < 0.40:
+                score -= 15
+
         return max(round(score, 1), 0.0)
     
     def _generate_assessment(self, score: float) -> str:
