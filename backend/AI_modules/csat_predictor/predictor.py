@@ -110,14 +110,43 @@ def _rule_based_predict(features: np.ndarray) -> tuple[float, str]:
     """
     Deterministic prediction used when no trained model exists.
     Returns (score_float_1–5, label_string).
+
+    Feature indices (fixed — see extract_features docstring):
+      0  agent_empathy_score        1  customer_frustration_level
+      2  resolution_status_encoded  3  emotional_trajectory_encoded
+      4  behavioral_score           5  agent_interruptions
+      6  talk_ratio                 7  silence_percentage
+      8  avg_agent_response_time    9  acknowledgment_rate
     """
     score = 3.0
-    score += (features[0] - 0.5) * 2.0        # empathy:       0→-1, 1→+1
-    score -= features[1] * 2.5                 # frustration:   1.0→-2.5
-    score += (features[2] - 1.0) * 0.6         # resolution:    resolved→+0.6
-    score += (features[3] - 1.0) * 0.4         # trajectory:    improving→+0.4
-    score -= min(features[5], 6.0) * 0.1       # interruptions: -0.1 each, max -0.6
-    score  = float(np.clip(score, 1.0, 5.0))
+
+    # Empathy: 0→-1, 0.5→0, 1→+1
+    score += (features[0] - 0.5) * 2.0
+
+    # Frustration: 0→0, 1→-2.5 (strong negative driver)
+    score -= features[1] * 2.5
+
+    # Resolution: unresolved(0)→-0.8, pending(1)→0, resolved(2)→+0.8
+    score += (features[2] - 1.0) * 0.8
+
+    # Emotional trajectory: deteriorating(0)→-0.5, stable(1)→0, improving/resolved(2)→+0.5, positive_throughout(3)→+1.0
+    score += (features[3] - 1.0) * 0.5
+
+    # Behavioral score: normalize 0-100 → contribution of ±0.5
+    # 50→0, 100→+0.5, 0→-0.5
+    score += ((features[4] - 50.0) / 100.0) * 1.0
+
+    # Agent interruptions: -0.12 each, capped at -0.72 (6 interruptions)
+    score -= min(features[5], 6.0) * 0.12
+
+    # Acknowledgment rate: 0→-0.3, 0.2→0, 0.5→+0.3, 1.0→+0.6
+    score += (features[9] - 0.2) * 1.2
+
+    # Silence: high silence (>20%) is mildly negative — agent wasn't engaged
+    if features[7] > 20.0:
+        score -= (features[7] - 20.0) * 0.02   # -0.2 at 30%, -0.4 at 40%
+
+    score = float(np.clip(score, 1.0, 5.0))
     return round(score, 1), SCORE_TO_LABEL.get(round(score), "neutral")
 
 

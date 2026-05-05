@@ -177,16 +177,19 @@ def _improve_summary(summary, transcript):
 
 def _apply_outcome_correction(result, transcript_text):
     """
-    Post-process ratings using transcript evidence alone — independent of the
-    fine-tuned model's tone classification, which is unreliable for nuanced calls.
+    Conservative post-processing of model ratings using transcript evidence.
 
-    Three signal families drive corrections:
-    1. Unresolved-request density — customer repeated a specific request many times
-    2. Agent refusal/retention language — broad set matching real agent speech patterns
-    3. Model tone consistency — tone + dismissiveness as a secondary guard
+    Rules ONLY fire when two independent signals co-occur:
+      1. Customer repeated a request-class keyword multiple times (request_hits)
+      2. Agent used refusal / retention language (refusal_hit)
 
-    Rules are intentionally independent so that any single strong signal fires the
-    correction, rather than requiring two signals to co-occur.
+    This dual-signal requirement prevents false corrections on legitimate service
+    calls where request words appear naturally (e.g. "cancel" in a card-cancellation
+    call).  When refusal_hit=False the model's own ratings are trusted as-is.
+
+    Rule 6 (consistency boost) runs last and recovers from the inverse error:
+    the model rating helpfulness/overall low despite strong process metrics and
+    no transcript evidence of a bad outcome.
     """
     ratings = result.get("detailed_ratings", {})
     if not ratings:
@@ -233,6 +236,16 @@ def _apply_outcome_correction(result, transcript_text):
         # Ignoring the request
         "instead of cancelling", "instead of disconnecting",
         "have you considered", "what if instead",
+        # Comcast-style interrogation / stalling tactics
+        "keeping your service", "keeping your account",
+        "keep your service", "keep your account",
+        "my job is to",
+        "have a conversation with you about",
+        "help me understand why you",
+        "why is it that you're looking",
+        "what would it take to keep",
+        "before i can do that for you",
+        "understand the reason",
     ]
 
     # ── Compute signals ───────────────────────────────────────────────────────
@@ -241,25 +254,57 @@ def _apply_outcome_correction(result, transcript_text):
     request_hits  = sum(transcript_lower.count(w) for w in request_words)
     refusal_hit   = any(sig in transcript_lower for sig in refusal_sigs)
 
+    # ── Rule 0: Extreme request volume (no refusal_hit required) ─────────────
+    # A customer cannot repeat a disconnect/cancel request 20+ times in a call
+    # where the agent is actually processing it.  At this volume, non-fulfillment
+    # is conclusive regardless of whether the agent's exact phrasing matched the
+    # refusal signal list.  Override tones and cap all outcome/process ratings
+    # BEFORE the remaining rules run so the blended score reflects reality.
+    _EXTREME_THRESHOLD = 20
+    if request_hits >= _EXTREME_THRESHOLD:
+        if customer_tone in ("satisfied", "positive", "neutral"):
+            old_ct = customer_tone
+            customer_tone = "frustrated"
+            result["customer_tone"] = "Frustrated"
+        ratings["helpfulness"] = min(ratings.get("helpfulness", 3), 1)
+        ratings["overall"]     = min(ratings.get("overall",     3), 1)
+        ratings["adherence"]   = min(ratings.get("adherence",   3), 1)
+        ratings["clarity"]     = min(ratings.get("clarity",     3), 3)
+        ratings["respect"]     = min(ratings.get("respect",     3), 3)
+        logger.warning(
+            "Outcome correction Rule 0 (extreme volume=%d): "
+            "customer_tone→frustrated, helpfulness/overall/adherence→1, clarity/respect→3",
+            request_hits,
+        )
+
     # ── Pre-pass: tone correction based on transcript evidence ───────────────
-    # The local FLAN-T5 model frequently mis-classifies tone as Satisfied/Helpful
-    # in contentious retention calls.  We override with evidence-based values
-    # BEFORE evaluating the tone-dependent rules below, so those rules can fire
-    # even when the model was confidently wrong about tone.
-    if request_hits >= 5 and customer_tone in ("satisfied", "positive", "neutral"):
+    # Only override the model's positive tone when BOTH conditions hold:
+    #   1. The customer repeated a request-class word many times (request_hits ≥ 5)
+    #   2. The agent also used refusal/retention language (refusal_hit=True)
+    #
+    # Condition 2 is critical.  On a legitimate service call — e.g. a customer
+    # calling to cancel compromised bank cards — "cancel" appears many times
+    # naturally because that IS the service being performed.  Without refusal
+    # evidence we cannot distinguish topic repetition from frustrated repetition,
+    # and blindly overriding a correctly-classified "Satisfied" tone destroys the
+    # analysis.  When refusal_hit=False the model's tone assessment is more
+    # reliable than the raw keyword count.
+    if request_hits >= 5 and refusal_hit and customer_tone in ("satisfied", "positive", "neutral"):
         old_ct = customer_tone
         customer_tone = "frustrated"
         result["customer_tone"] = "Frustrated"
         logger.warning(
-            "Outcome correction Pre-pass: customer_tone %s→Frustrated (request_hits=%d)",
+            "Outcome correction Pre-pass: customer_tone %s→Frustrated "
+            "(request_hits=%d, refusal_hit=True)",
             old_ct, request_hits
         )
-    if request_hits >= 10 and agent_tone in ("helpful", "positive", "neutral", "professional"):
+    if request_hits >= 10 and refusal_hit and agent_tone in ("helpful", "positive", "neutral", "professional"):
         old_at = agent_tone
         agent_tone = "dismissive"
         result["agent_tone"] = "Dismissive"
         logger.warning(
-            "Outcome correction Pre-pass: agent_tone %s→Dismissive (request_hits=%d)",
+            "Outcome correction Pre-pass: agent_tone %s→Dismissive "
+            "(request_hits=%d, refusal_hit=True)",
             old_at, request_hits
         )
 
@@ -289,21 +334,23 @@ def _apply_outcome_correction(result, transcript_text):
         logger.warning("Outcome correction Rule 2 fired (request_hits=%d, refusal): helpfulness→%d",
                        request_hits, ratings["helpfulness"])
 
-    # Rule 3: customer repeated a request 5+ times regardless of agent phrasing
-    # (volume alone means the issue was never resolved)
-    if request_hits >= 5:
+    # Rule 3: customer repeated a request 5+ times AND agent used refusal/retention
+    # language — the volume of repetition combined with resistance means the issue
+    # was never fulfilled.  Requires refusal_hit for the same reason as the Pre-pass:
+    # high request counts alone are ambiguous (could be the topic of the call).
+    if request_hits >= 5 and refusal_hit:
         ratings["helpfulness"] = min(ratings.get("helpfulness", 3), 2)
-        logger.warning("Outcome correction Rule 3 fired (request_hits=%d): helpfulness→%d",
-                       request_hits, ratings["helpfulness"])
+        logger.warning(
+            "Outcome correction Rule 3 fired (request_hits=%d, refusal_hit=True): helpfulness→%d",
+            request_hits, ratings["helpfulness"]
+        )
 
-    # Rule 3b: extremely high request density means the agent failed to efficiently
-    # address the customer — respect and adherence are also low in such calls.
-    # Does NOT require customer_unsatisfied (tone may still be mis-classified).
-    if request_hits >= 10:
+    # Rule 3b: extreme request density + refusal → agent also failed on process quality.
+    if request_hits >= 10 and refusal_hit:
         ratings["respect"]    = min(ratings.get("respect", 3), 2)
         ratings["adherence"]  = min(ratings.get("adherence", 3), 3)
         logger.warning(
-            "Outcome correction Rule 3b fired (request_hits=%d): respect→%d, adherence→%d",
+            "Outcome correction Rule 3b fired (request_hits=%d, refusal_hit=True): respect→%d, adherence→%d",
             request_hits, ratings["respect"], ratings["adherence"]
         )
 
@@ -323,13 +370,36 @@ def _apply_outcome_correction(result, transcript_text):
             "Outcome correction Rule 5 fired (agent_dismissive): clarity→3"
         )
 
-    # Rule 5b: when the customer repeated a request 10+ times, the agent's
-    # communication was clearly not effective — clarity should not stay at 5.
-    if request_hits >= 10 and ratings.get("clarity", 3) > 3:
+    # Rule 5b: extreme request density + refusal → communication was ineffective.
+    if request_hits >= 10 and refusal_hit and ratings.get("clarity", 3) > 3:
         ratings["clarity"] = 3
         logger.warning(
-            "Outcome correction Rule 5b fired (request_hits=%d): clarity→3",
+            "Outcome correction Rule 5b fired (request_hits=%d, refusal_hit=True): clarity→3",
             request_hits
+        )
+
+    # Rule 6: Consistency boost — process-quality metrics are strong but outcome
+    # metrics are suspiciously low.  The local FLAN-T5 model reliably rates
+    # clarity/respect/adherence but frequently mis-rates helpfulness and overall
+    # for good calls due to overall-tone mislabelling.  When the process average
+    # is high (≥ 4.0) and there is no transcript evidence of repeated unresolved
+    # requests (request_hits < 3), low helpfulness/overall are almost certainly
+    # model errors — boost them to prevent a false 15/100 score on a good call.
+    avg_base = (
+        ratings.get("clarity", 3) +
+        ratings.get("respect", 3) +
+        ratings.get("adherence", 3)
+    ) / 3.0
+    if avg_base >= 4.0 and request_hits < 3 and ratings.get("helpfulness", 5) <= 2:
+        boost_target = max(3, int(avg_base) - 1)   # avg=5.x→4, avg=4.x→3
+        old_help    = ratings.get("helpfulness", 2)
+        old_overall = ratings.get("overall",     2)
+        ratings["helpfulness"] = max(ratings.get("helpfulness", 2), boost_target)
+        ratings["overall"]     = max(ratings.get("overall",     2), boost_target)
+        logger.warning(
+            "Outcome correction Rule 6 fired (consistency boost): "
+            "avg_base=%.1f, helpfulness %d→%d, overall %d→%d",
+            avg_base, old_help, ratings["helpfulness"], old_overall, ratings["overall"]
         )
 
     result["detailed_ratings"] = ratings

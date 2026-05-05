@@ -228,7 +228,7 @@ def analyze_vocal_stress(audio_path: str, transcript: dict) -> dict:
     agent_scores    = [e["stress_score"] for e in utterance_stress
                        if e["role"] == "Agent"]
     customer_scores = [e["stress_score"] for e in utterance_stress
-                       if "Customer" in e["role"]]
+                       if e["role"] == "Customer"]
 
     agent_stress_avg    = round(float(np.mean(agent_scores)),    4) if agent_scores    else 0.0
     customer_stress_avg = round(float(np.mean(customer_scores)), 4) if customer_scores else 0.0
@@ -259,7 +259,7 @@ def analyze_vocal_stress(audio_path: str, transcript: dict) -> dict:
         peak_idx = next(
             (
                 i for i, e in enumerate(utterance_stress)
-                if "Customer" in e["role"] and e["start"] == peak_stress["start"]
+                if e["role"] == "Customer" and e["start"] == peak_stress["start"]
             ),
             None,
         )
@@ -267,7 +267,7 @@ def analyze_vocal_stress(audio_path: str, transcript: dict) -> dict:
             post_peak_scores = [
                 e["stress_score"]
                 for e in utterance_stress[peak_idx + 1:]
-                if "Customer" in e["role"]
+                if e["role"] == "Customer"
             ]
             if post_peak_scores:
                 calm_recovery_detected = bool(

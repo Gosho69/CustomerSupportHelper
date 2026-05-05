@@ -49,45 +49,79 @@ def _check_ollama_available() -> bool:
 
 def _generate_tips_with_ai(turns, call_summary, emotion_summary, ratings, summary_text):
     context_parts = []
-    
+
     if summary_text:
         context_parts.append(f"CALL SUMMARY:\n{summary_text}")
-    
-    if turns and len(turns) <= 30:
+
+    # Always include a transcript excerpt — long calls are truncated to first 15 + last 15
+    # turns so Ollama can see how the call opened AND how it closed.
+    if turns:
+        _MAX = 30
+        if len(turns) > _MAX:
+            half = _MAX // 2
+            shown = turns[:half] + [{"speaker": "…", "text": f"[{len(turns) - _MAX} turns omitted]", "emotion": "", "sentiment": ""}] + turns[-half:]
+        else:
+            shown = turns
         context_parts.append("\nCONVERSATION TRANSCRIPT:")
-        for turn in turns:
-            speaker = turn.get('speaker', 'Unknown')
-            text = turn.get('text', '')[:150]
-            emotion = turn.get('emotion', 'neutral')
-            sentiment = turn.get('sentiment', 'neutral')
-            context_parts.append(f"[{speaker}] ({emotion}/{sentiment}): {text}")
-    
+        for turn in shown:
+            speaker  = turn.get("speaker",   "Unknown")
+            text     = turn.get("text",       "")[:150]
+            emotion  = turn.get("emotion",    "")
+            sentiment = turn.get("sentiment", "")
+            tag = f"({emotion}/{sentiment})" if emotion or sentiment else ""
+            context_parts.append(f"[{speaker}] {tag}: {text}")
+
     if emotion_summary:
         context_parts.append(f"\nEMOTION DISTRIBUTION:\n{json.dumps(emotion_summary, indent=2)}")
-    
+
     if ratings:
-        context_parts.append(f"\nRATINGS:\n{json.dumps(ratings, indent=2)}")
-    
+        context_parts.append(f"\nRATINGS (scale 1–5):\n{json.dumps(ratings, indent=2)}")
+
     context = "\n".join(context_parts)
-    
-    prompt = f"""Analyze this call and identify ONLY significant problems the agent made.
+
+    # Adapt the directive based on outcome quality.
+    # When helpfulness or overall are ≤ 2 the call had a serious problem — tell
+    # Ollama this explicitly so it doesn't return an empty array.
+    helpfulness = (ratings or {}).get("helpfulness")
+    overall     = (ratings or {}).get("overall")
+    serious_failure = (
+        (helpfulness is not None and float(helpfulness) <= 2) or
+        (overall     is not None and float(overall)     <= 2)
+    )
+
+    if serious_failure:
+        directive = (
+            "IMPORTANT: The ratings above indicate serious quality issues "
+            "(helpfulness or overall ≤ 2/5). You MUST generate actionable coaching "
+            "tips — do NOT return an empty array. Identify specifically what the "
+            "agent did wrong and how to improve."
+        )
+    else:
+        directive = (
+            "Return empty array [] if the call was handled well.\n"
+            "Return tips array only if significant problems exist."
+        )
+
+    prompt = f"""Analyze this customer service call and identify problems the agent made.
 
 {context}
 
-Generate tips ONLY if agent:
-- Was rude, dismissive, or unprofessional
-- Showed frustration/negative emotions
-- Interrupted customer repeatedly
+Flag issues when the agent:
+- Was rude, dismissive, or obstructive
+- Showed frustration or negative emotions
+- Interrupted the customer repeatedly
 - Talked excessively without listening
-- Failed to resolve issue due to poor communication
+- Failed to fulfill the customer's explicit request (e.g. cancel, refund, disconnect)
+- Used stalling or retention tactics instead of helping
 
-DO NOT flag: minor politeness issues, slightly imperfect wording, small improvements.
+DO NOT flag minor politeness issues, slightly imperfect wording, or small style improvements.
 
-Return empty array [] if call was good.
-Return tips array if significant issues found:
-[{{"tip": "What agent did wrong and how to fix", "justification": "Why problematic", "evidence": {{"issue": "type"}}}}]
+{directive}
 
-Return ONLY JSON array, no other text."""
+Response format:
+[{{"tip": "What the agent did wrong and how to fix it", "justification": "Why this is problematic", "evidence": {{"issue": "type"}}}}]
+
+Return ONLY a JSON array, no other text."""
 
     payload = {
         "model": OLLAMA_MODEL,

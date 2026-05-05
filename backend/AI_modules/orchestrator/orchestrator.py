@@ -93,44 +93,112 @@ def _agent_tone_to_empathy():
 def _apply_local_model_tone_signals(emotion_summary: dict, call_summary: dict) -> dict:
     """
     When running the local model, use the model's customer_tone and agent_tone
-    outputs to override the high-level emotion summary fields that the rule-based
-    system tends to get wrong.
+    outputs to refine the high-level emotion summary fields.
+
+    Key constraint: the per-turn emotion analyzer uses distilroberta on each
+    utterance and produces a trajectory-based resolution/satisfaction assessment
+    that is more granular and reliable than the FLAN-T5 model's single overall
+    tone label.  We therefore NEVER downgrade a call that the emotion analyzer
+    has already confirmed as resolved + satisfied — the local model's negative
+    tone label on such calls is almost always a misclassification.
     """
     customer_tone = (call_summary.get("customer_tone") or "").lower().strip()
-    agent_tone = (call_summary.get("agent_tone") or "").lower().strip()
+    agent_tone    = (call_summary.get("agent_tone")    or "").lower().strip()
 
-    tone_sat  = _tone_to_satisfaction()
-    tone_ct   = _tone_to_call_tone()
-    tone_res  = _tone_to_resolution()
-    tone_emp  = _agent_tone_to_empathy()
+    tone_sat = _tone_to_satisfaction()
+    tone_ct  = _tone_to_call_tone()
+    tone_res = _tone_to_resolution()
+    tone_emp = _agent_tone_to_empathy()
+
+    current_resolution   = emotion_summary.get("resolution_status",    "pending")
+    current_satisfaction = emotion_summary.get("customer_satisfaction", "neutral")
+    strongly_negative    = customer_tone in ("frustrated", "negative", "angry")
+
+    # "already confirmed positive" — emotion analyser found the call resolved
+    # AND the customer was satisfied.  Protecting both fields together avoids
+    # a partial override that would still trigger the satisfaction-only penalty.
+    already_positive = (
+        current_resolution   == "resolved" and
+        current_satisfaction in ("satisfied", "very_satisfied")
+    )
 
     if customer_tone and customer_tone in tone_sat:
-        emotion_summary["customer_satisfaction"] = tone_sat[customer_tone]
-        emotion_summary["call_tone"] = tone_ct[customer_tone]
+        # Only apply a negative-tone override when the emotion analyser has NOT
+        # already confirmed a positive outcome.  Positive overrides (e.g. model
+        # says "satisfied") are always safe to apply.
+        if not (strongly_negative and already_positive):
+            emotion_summary["customer_satisfaction"] = tone_sat[customer_tone]
+            emotion_summary["call_tone"] = tone_ct[customer_tone]
+        else:
+            logger.info(
+                "_apply_local_model_tone_signals: skipping negative satisfaction "
+                "override — emotion analyser already confirmed resolved+satisfied "
+                "(customer_tone=%s)", customer_tone
+            )
 
     if agent_tone and agent_tone in tone_emp:
         # Blend with rule-based score — take the higher of the two to avoid
-        # penalising agents when keyword detection misses empathy phrases
+        # penalising agents when keyword detection misses empathy phrases.
         rule_based_score = emotion_summary.get("agent_empathy_score", 0.0)
-        model_score = tone_emp[agent_tone]
+        model_score      = tone_emp[agent_tone]
         emotion_summary["agent_empathy_score"] = round(max(rule_based_score, model_score), 3)
 
-    # Resolution override.
-    # Always override "pending" (rule-based system was uncertain — model tone is
-    # more reliable here).  Also override "resolved" when the customer tone is
-    # clearly negative: the emotion analyzer can incorrectly set "resolved"
-    # based on a single polite "thanks" at the end of a frustrated call; the
-    # model's tone assessment from the full transcript is a better signal.
+    # Resolution override: only promote/demote "pending" status.
+    # Never downgrade "resolved" — the emotion analyser's trajectory-based
+    # "resolved" assessment is authoritative and the local model's overall tone
+    # label is an unreliable signal for this specific field.
     if customer_tone and customer_tone in tone_res:
-        current_resolution = emotion_summary.get("resolution_status", "pending")
-        mapped_resolution  = tone_res[customer_tone]
-        strongly_negative  = customer_tone in ("frustrated", "negative", "angry")
-        if (current_resolution == "pending" or
-                (current_resolution == "resolved" and strongly_negative and
-                 mapped_resolution == "unresolved")):
-            emotion_summary["resolution_status"] = mapped_resolution
+        if current_resolution == "pending":
+            emotion_summary["resolution_status"] = tone_res[customer_tone]
+        elif current_resolution == "resolved" and strongly_negative:
+            logger.info(
+                "_apply_local_model_tone_signals: preserving 'resolved' status — "
+                "not overriding with model's negative tone (customer_tone=%s)",
+                customer_tone
+            )
 
     return emotion_summary
+
+
+def _compute_local_model_score(behavioral_score: float, ratings: dict) -> float:
+    """
+    Compute the final score for local-model calls as a weighted blend of
+    behavioral quality and model-rated interaction quality.
+
+    The five model ratings (1-5 scale) are weighted by importance and mapped
+    to a 0-100 quality scale, then blended with the behavioral score.
+
+    Weights:
+      helpfulness 40% — primary outcome signal: did the agent solve the problem?
+      overall     25% — model's holistic judgment
+      clarity     15% — communication effectiveness
+      respect     10% — agent tone toward customer
+      adherence   10% — procedure compliance
+
+    Blend is outcome-scaled: when helpfulness is very low (agent failed to help),
+    a good behavioral score (clear speech, pacing) must not mask the outcome failure.
+      helpfulness ≤ 1  →  15 % behavioral + 85 % model quality
+      helpfulness ≤ 2  →  25 % behavioral + 75 % model quality
+      helpfulness ≥ 3  →  40 % behavioral + 60 % model quality  (default)
+    """
+    h = float(ratings.get("helpfulness", 3))
+    o = float(ratings.get("overall",     3))
+    c = float(ratings.get("clarity",     3))
+    r = float(ratings.get("respect",     3))
+    a = float(ratings.get("adherence",   3))
+
+    weighted = 0.40*h + 0.25*o + 0.15*c + 0.10*r + 0.10*a
+    model_quality = (weighted - 1.0) / 4.0 * 100.0          # 1-5 → 0-100
+
+    if h <= 1:
+        beh_w, mdl_w = 0.15, 0.85
+    elif h <= 2:
+        beh_w, mdl_w = 0.25, 0.75
+    else:
+        beh_w, mdl_w = 0.40, 0.60
+
+    blended = beh_w * behavioral_score + mdl_w * model_quality
+    return max(0.0, min(100.0, round(blended, 1)))
 
 
 def analyze_call(
@@ -291,77 +359,49 @@ def analyze_call(
     elif summarization_model.lower() != "gpt4":
         emotion_summary = _apply_local_model_tone_signals(emotion_summary, call_summary)
 
-        # Same resolution penalty as the GPT-4 path: the local model's tone signals
-        # have already been mapped to resolution_status / customer_satisfaction above.
-        resolution = emotion_summary.get("resolution_status", "unknown")
-        satisfaction = emotion_summary.get("customer_satisfaction", "unknown")
-        raw_score = behavioral_results.get("behavioral_score", 0)
+        # Local model path: blend behavioral quality with model-rated quality.
+        # No stacking penalty chain — each penalty was an independent deduction
+        # that could compound into catastrophically wrong scores.  The model
+        # ratings already encode call quality; scaling them directly and blending
+        # with behavioral metrics is transparent and bounded.
+        ratings = (call_summary.get("detailed_ratings") or {})
+        raw_beh = behavioral_results.get("behavioral_score", 50.0)
+        blended = _compute_local_model_score(raw_beh, ratings)
+        _update_behavioral_score(behavioral_results, behavioral_summary, blended)
         logger.info(
-            "[Orchestrator] Local model path: behavioral_score_raw=%.1f, "
-            "resolution=%s, satisfaction=%s",
-            raw_score, resolution, satisfaction
+            "[Orchestrator] Local model blended score: behavioral=%.1f, "
+            "helpfulness=%s, overall=%s → final=%.1f",
+            raw_beh,
+            ratings.get("helpfulness", "?"),
+            ratings.get("overall", "?"),
+            blended,
         )
-        resolution_penalty_applied = False
-        if resolution == "unresolved" and satisfaction in ("dissatisfied", "very_dissatisfied"):
-            penalty = 25
-            old_score = raw_score
-            new_score = max(0.0, round(old_score - penalty, 1))
-            _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
-            resolution_penalty_applied = True
-            logger.warning(
-                "[Orchestrator] Resolution penalty applied: %.1f → %.1f "
-                "(resolution=%s, satisfaction=%s)",
-                old_score, new_score, resolution, satisfaction
-            )
-        else:
-            logger.info(
-                "[Orchestrator] No resolution penalty (resolution=%s, satisfaction=%s)",
-                resolution, satisfaction
-            )
 
-        if not resolution_penalty_applied and satisfaction in ("dissatisfied", "very_dissatisfied"):
-            sat_penalty = 15
-            old_score = behavioral_results.get("behavioral_score", 0)
-            new_score = max(0.0, round(old_score - sat_penalty, 1))
+    # Low-helpfulness / low-overall penalties apply to the GPT-4 path only.
+    # For the local model path the ratings already feed into _compute_local_model_score;
+    # applying them again here would double-count and produce inflated deductions.
+    if summarization_model.lower() == "gpt4":
+        helpfulness = (call_summary.get("detailed_ratings") or {}).get("helpfulness")
+        if helpfulness is not None and helpfulness <= 2:
+            help_penalty = (3 - helpfulness) * 15
+            current_score = behavioral_results.get("behavioral_score", 0)
+            new_score = max(0.0, round(current_score - help_penalty, 1))
             _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
             logger.warning(
-                "[Orchestrator] Satisfaction-only penalty applied: %.1f → %.1f "
-                "(satisfaction=%s, resolution=%s)",
-                old_score, new_score, satisfaction, resolution
+                "[Orchestrator] Low helpfulness penalty: helpfulness=%d → -%.0f: %.1f → %.1f",
+                helpfulness, help_penalty, current_score, new_score
             )
 
-    # Low-helpfulness penalty: when the AI confirms the agent failed to address
-    # the customer's core request (helpfulness 1-2 out of 5), the behavioral
-    # score should reflect this — a pure communication-metrics score can stay
-    # artificially high even when the outcome was terrible.
-    # This runs after the resolution penalty so the deductions stack correctly.
-    # Multiplier is 15 per point below 3: helpfulness=2 → -15, helpfulness=1 → -30.
-    helpfulness = (call_summary.get("detailed_ratings") or {}).get("helpfulness")
-    if helpfulness is not None and helpfulness <= 2:
-        help_penalty = (3 - helpfulness) * 15   # helpfulness=2 → -15, helpfulness=1 → -30
-        current_score = behavioral_results.get("behavioral_score", 0)
-        new_score = max(0.0, round(current_score - help_penalty, 1))
-        _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
-        logger.warning(
-            "[Orchestrator] Low helpfulness penalty: helpfulness=%d → -%.0f: %.1f → %.1f",
-            helpfulness, help_penalty, current_score, new_score
-        )
-
-    # Low overall rating penalty: when GPT-4 rates the call poorly overall
-    # (1-2 out of 5), apply an additional deduction. This catches cases where
-    # the individual sub-metric penalties don't fully pull down a call that was
-    # objectively poor (e.g. dismissive agent, dissatisfied customer, no resolution).
-    # Multiplier is 15 per point below 3: overall=2 → -15, overall=1 → -30.
-    overall_rating = (call_summary.get("detailed_ratings") or {}).get("overall")
-    if overall_rating is not None and overall_rating <= 2:
-        overall_penalty = (3 - overall_rating) * 15
-        current_score = behavioral_results.get("behavioral_score", 0)
-        new_score = max(0.0, round(current_score - overall_penalty, 1))
-        _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
-        logger.warning(
-            "[Orchestrator] Low overall rating penalty: overall=%d → -%.0f: %.1f → %.1f",
-            overall_rating, overall_penalty, current_score, new_score
-        )
+        overall_rating = (call_summary.get("detailed_ratings") or {}).get("overall")
+        if overall_rating is not None and overall_rating <= 2:
+            overall_penalty = (3 - overall_rating) * 15
+            current_score = behavioral_results.get("behavioral_score", 0)
+            new_score = max(0.0, round(current_score - overall_penalty, 1))
+            _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
+            logger.warning(
+                "[Orchestrator] Low overall rating penalty: overall=%d → -%.0f: %.1f → %.1f",
+                overall_rating, overall_penalty, current_score, new_score
+            )
 
     coaching_tips = generate(
         transcript=transcript,
@@ -504,66 +544,41 @@ def analyze_transcript(
         )
         emotion_summary = _apply_local_model_tone_signals(emotion_summary, call_summary)
 
-        resolution = emotion_summary.get("resolution_status", "unknown")
-        satisfaction = emotion_summary.get("customer_satisfaction", "unknown")
-        raw_score = behavioral_results.get("behavioral_score", 0)
+        ratings = (call_summary.get("detailed_ratings") or {})
+        raw_beh = behavioral_results.get("behavioral_score", 50.0)
+        blended = _compute_local_model_score(raw_beh, ratings)
+        _update_behavioral_score(behavioral_results, behavioral_summary, blended)
         logger.info(
-            "[Orchestrator] Local model path (transcript): behavioral_score_raw=%.1f, "
-            "resolution=%s, satisfaction=%s",
-            raw_score, resolution, satisfaction
+            "[Orchestrator] Local model blended score: behavioral=%.1f, "
+            "helpfulness=%s, overall=%s → final=%.1f",
+            raw_beh,
+            ratings.get("helpfulness", "?"),
+            ratings.get("overall", "?"),
+            blended,
         )
-        resolution_penalty_applied = False
-        if resolution == "unresolved" and satisfaction in ("dissatisfied", "very_dissatisfied"):
-            penalty = 25
-            old_score = raw_score
-            new_score = max(0.0, round(old_score - penalty, 1))
-            _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
-            resolution_penalty_applied = True
-            logger.warning(
-                "[Orchestrator] Resolution penalty applied: %.1f → %.1f",
-                old_score, new_score
-            )
-        else:
-            logger.info(
-                "[Orchestrator] No resolution penalty (resolution=%s, satisfaction=%s)",
-                resolution, satisfaction
-            )
 
-        if not resolution_penalty_applied and satisfaction in ("dissatisfied", "very_dissatisfied"):
-            sat_penalty = 15
-            old_score = behavioral_results.get("behavioral_score", 0)
-            new_score = max(0.0, round(old_score - sat_penalty, 1))
+    if summarization_model.lower() == "gpt4":
+        helpfulness = (call_summary.get("detailed_ratings") or {}).get("helpfulness")
+        if helpfulness is not None and helpfulness <= 2:
+            help_penalty = (3 - helpfulness) * 15
+            current_score = behavioral_results.get("behavioral_score", 0)
+            new_score = max(0.0, round(current_score - help_penalty, 1))
             _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
             logger.warning(
-                "[Orchestrator] Satisfaction-only penalty applied: %.1f → %.1f "
-                "(satisfaction=%s, resolution=%s)",
-                old_score, new_score, satisfaction, resolution
+                "[Orchestrator] Low helpfulness penalty: helpfulness=%d → -%.0f: %.1f → %.1f",
+                helpfulness, help_penalty, current_score, new_score
             )
 
-    # Low-helpfulness penalty (same logic as analyze_call path)
-    # Multiplier is 15 per point below 3: helpfulness=2 → -15, helpfulness=1 → -30.
-    helpfulness = (call_summary.get("detailed_ratings") or {}).get("helpfulness")
-    if helpfulness is not None and helpfulness <= 2:
-        help_penalty = (3 - helpfulness) * 15
-        current_score = behavioral_results.get("behavioral_score", 0)
-        new_score = max(0.0, round(current_score - help_penalty, 1))
-        _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
-        logger.warning(
-            "[Orchestrator] Low helpfulness penalty: helpfulness=%d → -%.0f: %.1f → %.1f",
-            helpfulness, help_penalty, current_score, new_score
-        )
-
-    # Low overall rating penalty (same logic as analyze_call path).
-    overall_rating = (call_summary.get("detailed_ratings") or {}).get("overall")
-    if overall_rating is not None and overall_rating <= 2:
-        overall_penalty = (3 - overall_rating) * 15
-        current_score = behavioral_results.get("behavioral_score", 0)
-        new_score = max(0.0, round(current_score - overall_penalty, 1))
-        _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
-        logger.warning(
-            "[Orchestrator] Low overall rating penalty: overall=%d → -%.0f: %.1f → %.1f",
-            overall_rating, overall_penalty, current_score, new_score
-        )
+        overall_rating = (call_summary.get("detailed_ratings") or {}).get("overall")
+        if overall_rating is not None and overall_rating <= 2:
+            overall_penalty = (3 - overall_rating) * 15
+            current_score = behavioral_results.get("behavioral_score", 0)
+            new_score = max(0.0, round(current_score - overall_penalty, 1))
+            _update_behavioral_score(behavioral_results, behavioral_summary, new_score)
+            logger.warning(
+                "[Orchestrator] Low overall rating penalty: overall=%d → -%.0f: %.1f → %.1f",
+                overall_rating, overall_penalty, current_score, new_score
+            )
 
     coaching_tips = generate(
         transcript=transcript,
