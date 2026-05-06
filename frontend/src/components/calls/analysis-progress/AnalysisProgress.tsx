@@ -42,10 +42,12 @@ export default function AnalysisProgress({ onDone }: Props) {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const processingRef = useRef(false);
   const stepTimersRef = useRef<NodeJS.Timeout[]>([]);
+  const pollTimersRef = useRef<NodeJS.Timeout[]>([]);
   const hasAutoOpenedRef = useRef(false);
   const modeCheckedRef = useRef(false);
 
   // On mount only: decide if we need recovery mode or should exit
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (modeCheckedRef.current) return;
     modeCheckedRef.current = true;
@@ -176,7 +178,7 @@ export default function AnalysisProgress({ onDone }: Props) {
           }
         }, POLL_MS);
 
-        stepTimersRef.current.push(id as unknown as NodeJS.Timeout);
+        pollTimersRef.current.push(id as unknown as NodeJS.Timeout);
       }),
     [completeFile, failFile],
   );
@@ -233,7 +235,10 @@ export default function AnalysisProgress({ onDone }: Props) {
     };
 
     run();
-    return () => stepTimersRef.current.forEach(clearTimeout);
+    return () => {
+      stepTimersRef.current.forEach(clearTimeout);
+      pollTimersRef.current.forEach(clearInterval);
+    };
   }, [
     files,
     fileStates.length,
@@ -269,7 +274,10 @@ export default function AnalysisProgress({ onDone }: Props) {
     };
 
     run();
-    return () => stepTimersRef.current.forEach(clearTimeout);
+    return () => {
+      stepTimersRef.current.forEach(clearTimeout);
+      pollTimersRef.current.forEach(clearInterval);
+    };
   }, [isRecoveryMode, fileStates.length, advanceSteps, pollCallStatus, handleAllDone]);
 
   // Auto-open detail modal when a single file completes
