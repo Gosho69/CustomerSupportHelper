@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui";
 import { useAnalysisStore } from "@/store/analysisStore";
 import DropZone from "./DropZone";
@@ -45,29 +44,26 @@ const validateFile = (file: File): string | null => {
 };
 
 export default function UploadCall() {
-  const router = useRouter();
   const toast = useToast();
   const { setFiles, setSummarizationModel } = useAnalysisStore();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<"gpt4" | "local">("gpt4");
 
-  const hasSuccessfulUploads = uploadedFiles.some(
-    (f) => f.status === "success",
-  );
+  const hasSuccessfulUploads = uploadedFiles.some((f) => f.status === "success");
   const allFilesUploaded =
     uploadedFiles.length > 0 &&
     uploadedFiles.every((f) => f.status === "success" || f.status === "error");
 
   const handleStartAnalysis = () => {
     const successfulFiles = uploadedFiles.filter((f) => f.status === "success");
-
     if (successfulFiles.length === 0) {
       toast.error("No files ready for analysis.");
       return;
     }
-
+    // Set state first, then trigger the page-level view switch via Zustand
+    setSummarizationModel(selectedModel);
+    setUploadedFiles([]);
     setFiles(
       successfulFiles.map((f) => ({
         file: f.file,
@@ -75,10 +71,6 @@ export default function UploadCall() {
         size: f.file.size,
       })),
     );
-    setSummarizationModel(selectedModel);
-
-    setUploadedFiles([]);
-    router.push("/dashboard/upload-call/analysis");
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -108,9 +100,7 @@ export default function UploadCall() {
 
       if (!error) {
         setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.file === file ? { ...f, status: "uploading" } : f,
-          ),
+          prev.map((f) => (f.file === file ? { ...f, status: "uploading" } : f)),
         );
 
         let progress = 0;
@@ -210,21 +200,11 @@ export default function UploadCall() {
             >
               <button
                 onClick={handleStartAnalysis}
-                disabled={isAnalyzing}
-                className="w-full px-6 py-4 rounded-lg font-semibold transition-all transform hover:scale-105 disabled:transform-none flex items-center justify-center space-x-2"
+                className="w-full px-6 py-4 rounded-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center space-x-2"
                 style={{ background: "var(--accent)", color: "#ffffff" }}
               >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Starting Analysis...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    <span>Send for Analysis</span>
-                  </>
-                )}
+                <CheckCircle className="w-5 h-5" />
+                <span>Send for Analysis</span>
               </button>
             </div>
           )}
