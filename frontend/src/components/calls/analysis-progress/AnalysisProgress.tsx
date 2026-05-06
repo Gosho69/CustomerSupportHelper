@@ -103,13 +103,19 @@ export default function AnalysisProgress({ onDone }: Props) {
         setFileStates((prev) => {
           const next = [...prev];
           if (next[fileIndex]?.status === "processing") {
-            next[fileIndex] = { ...next[fileIndex], currentStepIndex: currentStep };
+            next[fileIndex] = {
+              ...next[fileIndex],
+              currentStepIndex: currentStep,
+            };
           }
           return next;
         });
         if (fileName) updateStoredCallStep(fileName, currentStep);
         if (currentStep < ANALYSIS_STEPS.length - 1) {
-          const t = setTimeout(advanceNext, STEP_INTERVALS[currentStep] ?? 4000);
+          const t = setTimeout(
+            advanceNext,
+            STEP_INTERVALS[currentStep] ?? 4000,
+          );
           stepTimersRef.current.push(t);
         }
       };
@@ -223,7 +229,10 @@ export default function AnalysisProgress({ onDone }: Props) {
             }
             await pollCallStatus(callId, i);
           } catch (err: any) {
-            failFile(i, err.response?.data?.error ?? err.message ?? "Analysis failed");
+            failFile(
+              i,
+              err.response?.data?.error ?? err.message ?? "Analysis failed",
+            );
           }
         }),
       );
@@ -278,7 +287,13 @@ export default function AnalysisProgress({ onDone }: Props) {
       stepTimersRef.current.forEach(clearTimeout);
       pollTimersRef.current.forEach(clearInterval);
     };
-  }, [isRecoveryMode, fileStates.length, advanceSteps, pollCallStatus, handleAllDone]);
+  }, [
+    isRecoveryMode,
+    fileStates.length,
+    advanceSteps,
+    pollCallStatus,
+    handleAllDone,
+  ]);
 
   // Auto-open detail modal when a single file completes
   useEffect(() => {
@@ -308,7 +323,9 @@ export default function AnalysisProgress({ onDone }: Props) {
 
   if (files.length === 0 && !isRecoveryMode) return null;
 
-  const completedCount = fileStates.filter((f) => f.status === "completed").length;
+  const completedCount = fileStates.filter(
+    (f) => f.status === "completed",
+  ).length;
   const errorCount = fileStates.filter((f) => f.status === "error").length;
   const totalCount = fileStates.length;
   const allDone = totalCount > 0 && completedCount + errorCount === totalCount;
@@ -367,10 +384,16 @@ export default function AnalysisProgress({ onDone }: Props) {
           style={{ background: "#ffffff", border: "1px solid var(--border)" }}
         >
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+            <span
+              className="text-sm font-medium"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Overall Progress
             </span>
-            <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+            <span
+              className="text-sm font-medium"
+              style={{ color: "var(--text-secondary)" }}
+            >
               {completedCount} / {totalCount} complete
             </span>
           </div>
