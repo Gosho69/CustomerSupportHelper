@@ -26,16 +26,27 @@ services:
       retries: 5
 
   # ─────────────────────────────────────────────
-  # Django backend
+  # Caddy — HTTPS reverse proxy, terminates TLS for api.agentsights.org
   # ─────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
   backend:
     image: ghcr.io/${GITHUB_USERNAME}/agentsights-backend:latest
     restart: unless-stopped
     env_file: .env
     environment:
       BUILD_SHA: ${BUILD_SHA:-unknown}
-    ports:
-      - "8000:8000"
     volumes:
       # Persist uploaded audio files across deploys
       - media_files:/app/backend/api/media
@@ -146,3 +157,5 @@ volumes:
   hf_cache:
   ollama_data:
   redis_data:
+  caddy_data:
+  caddy_config:
